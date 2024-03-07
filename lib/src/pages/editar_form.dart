@@ -357,7 +357,7 @@ class _EditMyFormState extends State<EditMyForm> {
   }
 
   Widget _buildLoadingIndicator() {
-    return Center(
+    return const Center(
       child: CircularProgressIndicator(),
     );
   }

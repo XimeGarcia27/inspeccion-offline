@@ -47,7 +47,7 @@ class Inicio extends StatefulWidget {
 
 class _InicioState extends State<Inicio> {
   late Future<List<Map<String, dynamic>>> _futureReporte;
-  TextEditingController _searchController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
   String _searchText = '';
 
   @override
@@ -91,7 +91,7 @@ class _InicioState extends State<Inicio> {
         child: Column(
           children: [
             Text('Historial', style: Theme.of(context).textTheme.headline4),
-            SizedBox(
+            const SizedBox(
               height: 20,
             ),
             Row(
@@ -112,7 +112,7 @@ class _InicioState extends State<Inicio> {
                       hintText: 'Search...',
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(40.0),
-                        borderSide: BorderSide(
+                        borderSide: const BorderSide(
                           color: Color.fromARGB(255, 10, 38,
                               129), // Color del borde cuando el campo de texto está enfocado
                           width:
@@ -121,7 +121,7 @@ class _InicioState extends State<Inicio> {
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(40.0),
-                        borderSide: BorderSide(
+                        borderSide: const BorderSide(
                           color: Colors
                               .grey, // Color del borde cuando el campo de texto está deshabilitado
                           width:
@@ -138,7 +138,7 @@ class _InicioState extends State<Inicio> {
                       _searchText = '';
                     });
                   },
-                  icon: Icon(Icons.clear),
+                  icon: const Icon(Icons.clear),
                 ),
               ],
             ),
@@ -248,7 +248,7 @@ class _InicioState extends State<Inicio> {
                     6, 6, 68, 1), // Cambia el color de fondo del botón
                 onPrimary: Colors.white, // Cambia el color del texto del botón
               ),
-              child: Text('Ver Reporte F1'),
+              child: const Text('Ver Reporte F1'),
             ),
             ElevatedButton(
               onPressed: () {
@@ -266,7 +266,7 @@ class _InicioState extends State<Inicio> {
                     6, 6, 68, 1), // Cambia el color de fondo del botón
                 onPrimary: Colors.white, // Cambia el color del texto del botón
               ),
-              child: Text('Ver Reporte F2'),
+              child: const Text('Ver Reporte F2'),
             ),
             ElevatedButton(
               onPressed: () {
@@ -284,13 +284,13 @@ class _InicioState extends State<Inicio> {
                     6, 6, 68, 1), // Cambia el color de fondo del botón
                 onPrimary: Colors.white, // Cambia el color del texto del botón
               ),
-              child: Text('Fixture y Mano de Obra'),
+              child: const Text('Fixture y Mano de Obra'),
             ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.save),
+        child: const Icon(Icons.save),
         onPressed: () {
           // Acciones al presionar el botón flotante
         },

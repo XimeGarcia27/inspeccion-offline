@@ -24,6 +24,7 @@ class ReporteF2Screen extends StatelessWidget {
     File pdfFile = await generatePDF(datos);
 
     // Abrir el diálogo de compartir para compartir o guardar el PDF
+    // ignore: deprecated_member_use
     Share.shareFiles([pdfFile.path], text: 'Descarga tu reporte en PDF');
   }
 
@@ -38,14 +39,14 @@ class ReporteF2Screen extends StatelessWidget {
           },
         ),
         backgroundColor: const Color.fromRGBO(6, 6, 68, 1),
-        title: Text(
+        title: const Text(
           "REPORTE",
-          style: const TextStyle(fontSize: 24.0, color: Colors.white),
+          style: TextStyle(fontSize: 24.0, color: Colors.white),
         ),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: Icon(Icons.download),
+            icon: const Icon(Icons.download),
             onPressed: () {
               _descargarPDF(context);
             },
@@ -73,6 +74,7 @@ Future<File> generatePDF(List<Map<String, dynamic>> data) async {
     pdfWidgets.Page(
       orientation: pdfWidgets.PageOrientation.landscape,
       build: (context) {
+        // ignore: deprecated_member_use
         return pdfWidgets.Table.fromTextArray(
           data: data.map((row) {
             return [
@@ -106,16 +108,16 @@ Future<File> generatePDF(List<Map<String, dynamic>> data) async {
             'URL FOTO',
           ],
           columnWidths: {
-            0: pdfWidgets.FlexColumnWidth(1), // Departamento
-            1: pdfWidgets.FlexColumnWidth(1), // Ubicación
-            2: pdfWidgets.FlexColumnWidth(3), // Problema
-            3: pdfWidgets.FlexColumnWidth(2), // Material
-            4: pdfWidgets.FlexColumnWidth(2), // Otro
-            5: pdfWidgets.FlexColumnWidth(1), // Cantidad
-            6: pdfWidgets.FlexColumnWidth(2), // Mano de Obra
-            7: pdfWidgets.FlexColumnWidth(2), // Otro
-            8: pdfWidgets.FlexColumnWidth(1), // Cantidad
-            9: pdfWidgets.FlexColumnWidth(2), // URL FOTO
+            0: const pdfWidgets.FlexColumnWidth(1), // Departamento
+            1: const pdfWidgets.FlexColumnWidth(1), // Ubicación
+            2: const pdfWidgets.FlexColumnWidth(3), // Problema
+            3: const pdfWidgets.FlexColumnWidth(2), // Material
+            4: const pdfWidgets.FlexColumnWidth(2), // Otro
+            5: const pdfWidgets.FlexColumnWidth(1), // Cantidad
+            6: const pdfWidgets.FlexColumnWidth(2), // Mano de Obra
+            7: const pdfWidgets.FlexColumnWidth(2), // Otro
+            8: const pdfWidgets.FlexColumnWidth(1), // Cantidad
+            9: const pdfWidgets.FlexColumnWidth(2), // URL FOTO
           },
         );
       },
@@ -161,7 +163,7 @@ class _ReporteWidgetState extends State<ReporteF2Widget> {
               child: DataTable(
                 columnSpacing: (MediaQuery.of(context).size.width / 10) * 0.5,
                 dataRowHeight: 100,
-                columns: [
+                columns: const [
                   DataColumn(
                       label: Center(
                     child: Text(
@@ -220,63 +222,59 @@ class _ReporteWidgetState extends State<ReporteF2Widget> {
                   return DataRow(
                     cells: [
                       DataCell(
-                        Container(
-                          child: Text('${dato['nom_dep']}'),
-                        ),
+                        Text('${dato['nom_dep']}'),
                       ),
                       DataCell(
-                        Container(
-                          child: Text('${dato['clave_ubi']}'),
-                        ),
+                        Text('${dato['clave_ubi']}'),
                       ),
                       DataCell(
                         Container(
                           width: (MediaQuery.of(context).size.width / 10) * 3,
+                          padding: const EdgeInsets.all(3),
                           child: Center(child: Text('${dato['nom_probl']}')),
-                          padding: EdgeInsets.all(3),
                         ),
                       ),
                       DataCell(
                         Container(
                           width: (MediaQuery.of(context).size.width / 10) * 3,
+                          padding: const EdgeInsets.all(3),
                           child: Text('${dato['nom_mat']}'),
-                          padding: EdgeInsets.all(3),
                         ),
                       ),
                       DataCell(
                         Container(
+                          padding: const EdgeInsets.all(3),
                           child: Center(child: Text('${dato['otro']}')),
-                          padding: EdgeInsets.all(3),
                         ),
                       ),
                       DataCell(
                         Container(
+                          padding: const EdgeInsets.all(3),
                           child: Text('${dato['cant_mat']}'),
-                          padding: EdgeInsets.all(3),
                         ),
                       ),
                       DataCell(
                         Container(
+                          padding: const EdgeInsets.all(3),
                           child: Text('${dato['nom_obr']}'),
-                          padding: EdgeInsets.all(3),
                         ),
                       ),
                       DataCell(
                         Container(
+                          padding: const EdgeInsets.all(3),
                           child: Text('${dato['otro_obr']}'),
-                          padding: EdgeInsets.all(3),
                         ),
                       ),
                       DataCell(
                         Container(
+                          padding: const EdgeInsets.all(3),
                           child: Text('${dato['cant_obr']}'),
-                          padding: EdgeInsets.all(3),
                         ),
                       ),
                       DataCell(
                         Container(
+                          padding: const EdgeInsets.all(3),
                           child: Text('${dato['foto']}'),
-                          padding: EdgeInsets.all(3),
                         ),
                       ),
                     ],

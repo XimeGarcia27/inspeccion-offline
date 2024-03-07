@@ -1,5 +1,6 @@
 import 'package:app_inspections/services/db.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pdfWidgets;
@@ -9,7 +10,7 @@ import 'package:share_plus/share_plus.dart';
 class ReporteF1Screen extends StatelessWidget {
   final int idTienda;
 
-  const ReporteF1Screen({Key? key, required this.idTienda}) : super(key: key);
+  ReporteF1Screen({Key? key, required this.idTienda}) : super(key: key);
 
   Future<List<Map<String, dynamic>>> _cargarReporte(int idTienda) async {
     DatabaseHelper databaseHelper = DatabaseHelper();
@@ -24,6 +25,7 @@ class ReporteF1Screen extends StatelessWidget {
     File pdfFile = await generatePDF(datos);
 
     // Abrir el diálogo de compartir para compartir o guardar el PDF
+    // ignore: deprecated_member_use
     Share.shareFiles([pdfFile.path], text: 'Descarga tu reporte en PDF');
   }
 
@@ -38,14 +40,14 @@ class ReporteF1Screen extends StatelessWidget {
           },
         ),
         backgroundColor: const Color.fromRGBO(6, 6, 68, 1),
-        title: Text(
+        title: const Text(
           "REPORTE",
-          style: const TextStyle(fontSize: 24.0, color: Colors.white),
+          style: TextStyle(fontSize: 24.0, color: Colors.white),
         ),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: Icon(Icons.download),
+            icon: const Icon(Icons.download),
             onPressed: () {
               _descargarPDF(context);
             },
@@ -55,6 +57,8 @@ class ReporteF1Screen extends StatelessWidget {
       body: ReporteF1Widget(idTienda: idTienda),
     );
   }
+
+  void setState(Null Function() param0) {}
 }
 
 class ReporteF1Widget extends StatefulWidget {
@@ -73,6 +77,7 @@ Future<File> generatePDF(List<Map<String, dynamic>> data) async {
     pdfWidgets.Page(
       orientation: pdfWidgets.PageOrientation.landscape,
       build: (context) {
+        // ignore: deprecated_member_use
         return pdfWidgets.Table.fromTextArray(
           data: data.map((row) {
             return [
@@ -106,16 +111,16 @@ Future<File> generatePDF(List<Map<String, dynamic>> data) async {
             'URL FOTO',
           ],
           columnWidths: {
-            0: pdfWidgets.FlexColumnWidth(1), // Departamento
-            1: pdfWidgets.FlexColumnWidth(1), // Ubicación
-            2: pdfWidgets.FlexColumnWidth(3), // Problema
-            3: pdfWidgets.FlexColumnWidth(2), // Material
-            4: pdfWidgets.FlexColumnWidth(2), // Otro
-            5: pdfWidgets.FlexColumnWidth(1), // Cantidad
-            6: pdfWidgets.FlexColumnWidth(2), // Mano de Obra
-            7: pdfWidgets.FlexColumnWidth(2), // Otro
-            8: pdfWidgets.FlexColumnWidth(1), // Cantidad
-            9: pdfWidgets.FlexColumnWidth(2), // URL FOTO
+            0: const pdfWidgets.FlexColumnWidth(1), // Departamento
+            1: const pdfWidgets.FlexColumnWidth(1), // Ubicación
+            2: const pdfWidgets.FlexColumnWidth(3), // Problema
+            3: const pdfWidgets.FlexColumnWidth(2), // Material
+            4: const pdfWidgets.FlexColumnWidth(2), // Otro
+            5: const pdfWidgets.FlexColumnWidth(1), // Cantidad
+            6: const pdfWidgets.FlexColumnWidth(2), // Mano de Obra
+            7: const pdfWidgets.FlexColumnWidth(2), // Otro
+            8: const pdfWidgets.FlexColumnWidth(1), // Cantidad
+            9: const pdfWidgets.FlexColumnWidth(2), // URL FOTO
           },
         );
       },
@@ -147,146 +152,161 @@ class _ReporteWidgetState extends State<ReporteF1Widget> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.only(top: 20.0),
+      padding: const EdgeInsets.only(top: 20.0),
       child: FutureBuilder(
         future: _futureReporte,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           } else {
             List<Map<String, dynamic>> datos = snapshot.data!;
-            return SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columnSpacing: (MediaQuery.of(context).size.width / 10) * 0.5,
-                dataRowHeight: 100,
-                columns: [
-                  DataColumn(
-                      label: Center(
-                    child: Text(
-                      'Departamento',
+            return Column(children: [
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: DataTable(
+                  columnSpacing: (MediaQuery.of(context).size.width / 10) * 0.5,
+                  // ignore: deprecated_member_use
+                  dataRowHeight: 100,
+                  columns: const [
+                    DataColumn(
+                        label: Center(
+                      child: Text(
+                        'Departamento',
+                        softWrap: true,
+                      ),
+                    )),
+                    DataColumn(
+                        label: Text(
+                      'Ubicación',
                       softWrap: true,
-                    ),
-                  )),
-                  DataColumn(
+                    )),
+                    DataColumn(
                       label: Text(
-                    'Ubicación',
-                    softWrap: true,
-                  )),
-                  DataColumn(
-                    label: Text(
-                      'Problema',
+                        'Problema',
+                        softWrap: true,
+                      ),
+                    ),
+                    DataColumn(
+                        label: Text(
+                      'Material',
                       softWrap: true,
-                    ),
-                  ),
-                  DataColumn(
-                      label: Text(
-                    'Material',
-                    softWrap: true,
-                  )),
-                  DataColumn(
-                      label: Text(
-                    'Especifique (Otro)',
-                    softWrap: true,
-                  )),
-                  DataColumn(
-                      label: Text(
-                    'Cantidad',
-                    softWrap: true,
-                  )),
-                  DataColumn(
-                      label: Text(
-                    'Mano de Obra',
-                    softWrap: true,
-                  )),
-                  DataColumn(
-                      label: Text(
-                    'Especifique (Otro)',
-                    softWrap: true,
-                  )),
-                  DataColumn(
-                      label: Text(
-                    'Cantidad',
-                    softWrap: true,
-                  )),
-                  DataColumn(
-                      label: Text(
-                    'URL FOTO',
-                    softWrap: true,
-                  )),
-                ],
-                rows: datos.map((dato) {
-                  return DataRow(
-                    cells: [
-                      DataCell(
-                        Container(
-                          child: Text('${dato['nom_dep']}'),
+                    )),
+                    DataColumn(
+                        label: Text(
+                      'Especifique (Otro)',
+                      softWrap: true,
+                    )),
+                    DataColumn(
+                        label: Text(
+                      'Cantidad',
+                      softWrap: true,
+                    )),
+                    DataColumn(
+                        label: Text(
+                      'Mano de Obra',
+                      softWrap: true,
+                    )),
+                    DataColumn(
+                        label: Text(
+                      'Especifique (Otro)',
+                      softWrap: true,
+                    )),
+                    DataColumn(
+                        label: Text(
+                      'Cantidad',
+                      softWrap: true,
+                    )),
+                    DataColumn(
+                        label: Text(
+                      'URL FOTO',
+                      softWrap: true,
+                    )),
+                  ],
+                  rows: datos.map((dato) {
+                    return DataRow(
+                      cells: [
+                        DataCell(
+                          Text('${dato['nom_dep']}'),
                         ),
-                      ),
-                      DataCell(
-                        Container(
-                          child: Text('${dato['clave_ubi']}'),
+                        DataCell(
+                          Text('${dato['clave_ubi']}'),
                         ),
-                      ),
-                      DataCell(
-                        Container(
-                          width: (MediaQuery.of(context).size.width / 10) * 3,
-                          child: Center(child: Text('${dato['nom_probl']}')),
-                          padding: EdgeInsets.all(3),
+                        DataCell(
+                          Container(
+                            width: (MediaQuery.of(context).size.width / 10) * 3,
+                            padding: const EdgeInsets.all(3),
+                            child: Center(child: Text('${dato['nom_probl']}')),
+                          ),
                         ),
-                      ),
-                      DataCell(
-                        Container(
-                          width: (MediaQuery.of(context).size.width / 10) * 3,
-                          child: Text('${dato['nom_mat']}'),
-                          padding: EdgeInsets.all(3),
+                        DataCell(
+                          Container(
+                            width: (MediaQuery.of(context).size.width / 10) * 3,
+                            padding: const EdgeInsets.all(3),
+                            child: Text('${dato['nom_mat']}'),
+                          ),
                         ),
-                      ),
-                      DataCell(
-                        Container(
-                          child: Center(child: Text('${dato['otro']}')),
-                          padding: EdgeInsets.all(3),
+                        DataCell(
+                          Container(
+                            padding: const EdgeInsets.all(3),
+                            child: Center(child: Text('${dato['otro']}')),
+                          ),
                         ),
-                      ),
-                      DataCell(
-                        Container(
-                          child: Text('${dato['cant_mat']}'),
-                          padding: EdgeInsets.all(3),
+                        DataCell(
+                          Container(
+                            padding: const EdgeInsets.all(3),
+                            child: Text('${dato['cant_mat']}'),
+                          ),
                         ),
-                      ),
-                      DataCell(
-                        Container(
-                          child: Text('${dato['nom_obr']}'),
-                          padding: EdgeInsets.all(3),
+                        DataCell(
+                          Container(
+                            padding: const EdgeInsets.all(3),
+                            child: Text('${dato['nom_obr']}'),
+                          ),
                         ),
-                      ),
-                      DataCell(
-                        Container(
-                          child: Text('${dato['otro_obr']}'),
-                          padding: EdgeInsets.all(3),
+                        DataCell(
+                          Container(
+                            padding: const EdgeInsets.all(3),
+                            child: Text('${dato['otro_obr']}'),
+                          ),
                         ),
-                      ),
-                      DataCell(
-                        Container(
-                          child: Text('${dato['cant_obr']}'),
-                          padding: EdgeInsets.all(3),
+                        DataCell(
+                          Container(
+                            padding: const EdgeInsets.all(3),
+                            child: Text('${dato['cant_obr']}'),
+                          ),
                         ),
-                      ),
-                      DataCell(
-                        Container(
-                          child: Text('${dato['foto']}'),
-                          padding: EdgeInsets.all(3),
+                        DataCell(
+                          Container(
+                            padding: const EdgeInsets.all(3),
+                            child: Text('${dato['foto']}'),
+                          ),
                         ),
-                      ),
-                    ],
-                  );
-                }).toList(),
+                      ],
+                    );
+                  }).toList(),
+                ),
               ),
-            );
+            ]);
           }
         },
+      ),
+    );
+  }
+}
+
+class ImageViewScreen extends StatelessWidget {
+  final File image;
+
+  const ImageViewScreen({Key? key, required this.image}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Image')),
+      body: Center(
+        child: Image.file(image),
       ),
     );
   }

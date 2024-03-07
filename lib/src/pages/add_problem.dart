@@ -27,7 +27,7 @@ class _AgregarProblemaState extends State<AgregarProblema> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 IconButton(
-                  icon: Icon(Icons.close),
+                  icon: const Icon(Icons.close),
                   onPressed: () {
                     Navigator.of(context).pop(); // Cierra el diálogo
                   },
@@ -48,13 +48,15 @@ class _AgregarProblemaState extends State<AgregarProblema> {
                         .bold, // Puedes ajustar el peso de la fuente si lo deseas
                   ),
                 ),
-                SizedBox(height: 26),
+                const SizedBox(height: 26),
                 TextFormField(
-                  decoration: InputDecoration(labelText: 'Codigo del Defecto'),
+                  decoration:
+                      const InputDecoration(labelText: 'Codigo del Defecto'),
                 ),
-                SizedBox(height: 16), // Espacio entre los campos
+                const SizedBox(height: 16), // Espacio entre los campos
                 TextFormField(
-                  decoration: InputDecoration(labelText: 'Nombre del Defecto'),
+                  decoration:
+                      const InputDecoration(labelText: 'Nombre del Defecto'),
                 ),
                 const SizedBox(height: 16), // Espacio entre los campos
                 DropdownButtonFormField(
@@ -75,12 +77,12 @@ class _AgregarProblemaState extends State<AgregarProblema> {
                       const InputDecoration(labelText: 'Formato (F1 o F2)'),
                 ),
 
-                SizedBox(height: 25), // Espacio entre los campos
+                const SizedBox(height: 25), // Espacio entre los campos
                 ElevatedButton(
                   onPressed: () {
                     // Lógica para manejar la acción del botón
                   },
-                  child: Text('Agregar'),
+                  child: const Text('Agregar'),
                 ),
               ],
             ),

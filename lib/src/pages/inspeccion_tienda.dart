@@ -44,7 +44,7 @@ class _InspeccionTiendaState extends State<InspeccionTienda>
     Map<String, dynamic> arguments =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
     final String nombreTienda = arguments['nombreTienda'];
-    print('ID de tienda en InspeccionTienda: ${arguments['idTienda']}');
+    //print('ID de tienda en InspeccionTienda: ${arguments['idTienda']}');
     int idTi = arguments['idTienda'];
     return Scaffold(
       appBar: AppBar(

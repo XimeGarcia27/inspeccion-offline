@@ -1,6 +1,7 @@
 import 'package:app_inspections/services/auth_service.dart';
 import 'package:app_inspections/services/db.dart';
 import 'package:app_inspections/src/pages/f1.dart';
+import 'package:app_inspections/src/pages/fotos_prueba.dart';
 import 'package:app_inspections/src/pages/inicio_indv.dart';
 import 'package:app_inspections/src/pages/reporte.dart';
 import 'package:app_inspections/src/pages/screens.dart';
@@ -38,7 +39,7 @@ class AppState extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
       ],
-      child: MyApp(),
+      child: const MyApp(),
     );
   }
 }
@@ -53,17 +54,18 @@ class MyApp extends StatelessWidget {
       initialRoute: "inicioInsp",
       routes: {
         "splash": (_) => const SplashScreen(),
-        "registro": (_) => RegistroScreen(),
-        "login": (_) => LoginScreen(),
+        "registro": (_) => const RegistroScreen(),
+        "login": (_) => const LoginScreen(),
         "inicioInsp": (_) => const InicioInspeccion(),
         "inspectienda": (_) => const InspeccionTienda(initialTabIndex: 0),
         "f1": (_) => const F1Screen(idTienda: 1),
-        "reporte": (_) => ReporteScreen(
+        "reporte": (_) => const ReporteScreen(
               idTienda: 1,
             ),
         "inicio": (_) =>
-            InicioScreen(idTienda: 1, initialTabIndex: 0, nomTienda: ''),
+            const InicioScreen(idTienda: 1, initialTabIndex: 0, nomTienda: ''),
         "home": (_) => HomeFoto(),
+        "foto": (_) => FotosPrueba(),
         //"image": (_) => ImageDisplayScreen(),
         //"cheking":    (_) => CheckAuthScreen(),
       },

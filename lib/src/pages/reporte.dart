@@ -18,9 +18,9 @@ class ReporteScreen extends StatelessWidget {
           },
         ),
         backgroundColor: const Color.fromRGBO(6, 6, 68, 1),
-        title: Text(
+        title: const Text(
           "REPORTE",
-          style: const TextStyle(fontSize: 24.0, color: Colors.white),
+          style: TextStyle(fontSize: 24.0, color: Colors.white),
         ),
         centerTitle: true,
       ),
@@ -91,7 +91,7 @@ class _ReporteWidgetState extends State<ReporteWidget> {
                     DataCell(Text('${dato['nom_dep']}')),
                     DataCell(Text('${dato['clave_ubi']}')),
                     DataCell(
-                      Container(
+                      SizedBox(
                         width: 400,
                         child: Text(
                           '${dato['nom_probl']}',

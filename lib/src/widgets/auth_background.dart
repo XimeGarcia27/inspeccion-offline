@@ -10,7 +10,7 @@ class AuthBackground extends StatelessWidget {
     final size = MediaQuery.of(context).size;
 
     return Container(
-      color: Color.fromRGBO(241, 240, 241, 1),
+      color: const Color.fromRGBO(241, 240, 241, 1),
       width: double.infinity,
       height: double.infinity,
       child: Stack(
@@ -47,7 +47,8 @@ class _HeaderIcon extends StatelessWidget {
       child: Center(
         child: Image.asset(
           'assets/logo.png',
-          height: size.height * 0.2, // Tamaño del logo como un porcentaje de la altura de la pantalla
+          height: size.height *
+              0.2, // Tamaño del logo como un porcentaje de la altura de la pantalla
         ),
       ),
     );

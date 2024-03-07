@@ -27,7 +27,7 @@ class _AddMaterialState extends State<AddMaterial> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 IconButton(
-                  icon: Icon(Icons.close),
+                  icon: const Icon(Icons.close),
                   onPressed: () {
                     Navigator.of(context).pop(); // Cierra el diálogo
                   },
@@ -48,9 +48,10 @@ class _AddMaterialState extends State<AddMaterial> {
                         .bold, // Puedes ajustar el peso de la fuente si lo deseas
                   ),
                 ),
-                SizedBox(height: 26), // Espacio entre los campos
+                const SizedBox(height: 26), // Espacio entre los campos
                 TextFormField(
-                  decoration: InputDecoration(labelText: 'Nombre del Material'),
+                  decoration:
+                      const InputDecoration(labelText: 'Nombre del Material'),
                 ),
                 const SizedBox(height: 16), // Espacio entre los campos
                 DropdownButtonFormField(
@@ -71,12 +72,12 @@ class _AddMaterialState extends State<AddMaterial> {
                       const InputDecoration(labelText: 'Formato (F1 o F2)'),
                 ),
 
-                SizedBox(height: 25), // Espacio entre los campos
+                const SizedBox(height: 25), // Espacio entre los campos
                 ElevatedButton(
                   onPressed: () {
                     // Lógica para manejar la acción del botón
                   },
-                  child: Text('Agregar'),
+                  child: const Text('Agregar'),
                 ),
               ],
             ),

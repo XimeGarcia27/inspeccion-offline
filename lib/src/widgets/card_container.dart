@@ -8,9 +8,12 @@ class CardContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final double paddingValue = screenWidth * 0.05; // 5% del ancho de la pantalla
-    final double borderRadiusValue = screenWidth * 0.04; // 4% del ancho de la pantalla
-    final double blurRadiusValue = screenWidth * 0.03; // 3% del ancho de la pantalla
+    final double paddingValue =
+        screenWidth * 0.05; // 5% del ancho de la pantalla
+    final double borderRadiusValue =
+        screenWidth * 0.04; // 4% del ancho de la pantalla
+    final double blurRadiusValue =
+        screenWidth * 0.03; // 3% del ancho de la pantalla
 
     return Padding(
       padding: EdgeInsets.all(paddingValue),
@@ -22,15 +25,16 @@ class CardContainer extends StatelessWidget {
     );
   }
 
-  BoxDecoration _createCardShape(double borderRadiusValue, double blurRadiusValue) {
+  BoxDecoration _createCardShape(
+      double borderRadiusValue, double blurRadiusValue) {
     return BoxDecoration(
-      color: Color.fromARGB(255, 251, 250, 250),
+      color: const Color.fromARGB(255, 251, 250, 250),
       borderRadius: BorderRadius.circular(borderRadiusValue),
       boxShadow: [
         BoxShadow(
           color: Colors.black12,
           blurRadius: blurRadiusValue,
-          offset: Offset(0, 7),
+          offset: const Offset(0, 7),
         )
       ],
     );

@@ -1,8 +1,8 @@
 import 'package:app_inspections/services/db.dart';
-import 'package:app_inspections/src/screens/home_foto.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
+import 'package:app_inspections/services/functions.dart';
 
 class F1Screen extends StatelessWidget {
   final int idTienda;
@@ -42,6 +42,7 @@ class MyForm extends StatefulWidget {
 class _MyFormState extends State<MyForm> {
   final int idTienda;
   String idTien = '';
+  @override
   final BuildContext context;
   //bool _isButtonDisabled = true;
   List<Map<String, dynamic>> datosIngresados = [];
@@ -150,7 +151,7 @@ class _MyFormState extends State<MyForm> {
       isMaterialSelected = true;
       _idmatController.text = idMat.toString();
       idMat = idMaterialSeleccionado;
-      print('ID del material seleccionado: $idMat');
+      //print('ID del material seleccionado: $idMat');
       //print('ID de tienda en F1Screen: $idTiend');
     });
   }
@@ -163,7 +164,7 @@ class _MyFormState extends State<MyForm> {
       isProblemSelected = true;
       _idproblController.text = idProbl.toString();
       idProbl = idProblemaSeleccionado;
-      print('ID del problema seleccionado: $selectedOptionProblem');
+      //print('ID del problema seleccionado: $selectedOptionProblem');
     });
   }
 
@@ -174,7 +175,7 @@ class _MyFormState extends State<MyForm> {
       isObraSelected = true;
       _idobraController.text = idObra.toString();
       idObra = idObraSeleccionado;
-      print('OBRAA SELECCIONADO: $idObra');
+      //print('OBRAA SELECCIONADO: $idObra');
     });
   }
 
@@ -194,35 +195,6 @@ class _MyFormState extends State<MyForm> {
   String generateUniqueId() {
     lastGeneratedId++; // Incrementa el último ID generado
     return lastGeneratedId.toString(); // Devuelve el nuevo ID generado
-  }
-
-  // Función para mostrar un diálogo de confirmación
-  Future<bool> mostrarDialogoConfirmacion(BuildContext context) async {
-    return await showDialog<bool>(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text('Confirmar acción'),
-              content: Text('¿Está seguro de que desea guardar los datos?'),
-              actions: <Widget>[
-                TextButton(
-                  child: Text('Cancelar'),
-                  onPressed: () {
-                    Navigator.of(context)
-                        .pop(false); // Retorna false si cancela
-                  },
-                ),
-                TextButton(
-                  child: Text('Aceptar'),
-                  onPressed: () {
-                    Navigator.of(context).pop(true); // Retorna true si acepta
-                  },
-                ),
-              ],
-            );
-          },
-        ) ??
-        false; // Si showDialog devuelve null, retorna false por defecto
   }
 
   // Función para guardar datos con confirmación
@@ -672,7 +644,6 @@ class _MyFormState extends State<MyForm> {
                     return null;
                   },
                 ),
-
                 /* Row(
                   children: [
                     Flexible(
@@ -838,7 +809,7 @@ class _MyFormState extends State<MyForm> {
                   ],
                 ), */
 
-                SizedBox(
+                const SizedBox(
                   height: 20,
                 ),
                 Row(
@@ -848,14 +819,7 @@ class _MyFormState extends State<MyForm> {
                     Flexible(
                       flex: 1,
                       child: ElevatedButton.icon(
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return HomeFoto(); // Aquí creas una instancia de tu pantalla AgregarProblema
-                            },
-                          );
-                        },
+                        onPressed: () => {},
                         icon: const Icon(Icons.camera),
                         label: const Text('Tomar fotografía'),
                       ),
