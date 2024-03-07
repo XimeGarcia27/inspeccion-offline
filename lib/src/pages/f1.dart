@@ -3,7 +3,6 @@ import 'package:app_inspections/src/screens/home_foto.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
-import 'dart:math';
 
 class F1Screen extends StatelessWidget {
   final int idTienda;

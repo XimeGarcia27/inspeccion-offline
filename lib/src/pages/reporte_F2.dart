@@ -1,5 +1,4 @@
 import 'package:app_inspections/services/db.dart';
-import 'package:data_table_2/data_table_2.dart' as DataTable2;
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:pdf/pdf.dart';
@@ -76,17 +75,14 @@ Future<File> generatePDF(List<Map<String, dynamic>> data) async {
       build: (context) {
         return pdfWidgets.Table.fromTextArray(
           data: data.map((row) {
-            String nomMa = row['nom_mat'].toString().replaceAll('"', '""');
             return [
-              //row['id_rep'].toString(),
-              row['formato'],
               row['nom_dep'],
               row['clave_ubi'],
-              row['nom_probl'],
-              nomMa,
+              row['nom_probl'].toString(),
+              row['nom_mat']..toString(),
               row['otro'],
               row['cant_mat'],
-              row['nom_obr'],
+              row['nom_obr'].toString(),
               row['otro_obr'],
               row['cant_obr'],
               row['foto'],
@@ -96,14 +92,8 @@ Future<File> generatePDF(List<Map<String, dynamic>> data) async {
             fontWeight: pdfWidgets.FontWeight.bold,
             color: PdfColors.black, // Color del texto del encabezado
           ),
-          cellStyle: const pdfWidgets.TextStyle(
-            background: pdfWidgets.BoxDecoration(
-              color: PdfColors.black, // Verde brillante
-            ),
-          ),
+          cellStyle: const pdfWidgets.TextStyle(),
           headers: [
-            //'ID',
-            'Formato',
             'Departamento',
             'Ubicación',
             'Problema',
@@ -116,17 +106,16 @@ Future<File> generatePDF(List<Map<String, dynamic>> data) async {
             'URL FOTO',
           ],
           columnWidths: {
-            0: pdfWidgets.FlexColumnWidth(1), // Formato
-            1: pdfWidgets.FlexColumnWidth(1), // Departamento
-            2: pdfWidgets.FlexColumnWidth(1), // Ubicación
-            3: pdfWidgets.FlexColumnWidth(3), // Problema
-            4: pdfWidgets.FlexColumnWidth(2), // Material
-            5: pdfWidgets.FlexColumnWidth(2), // Otro
-            6: pdfWidgets.FlexColumnWidth(1), // Cantidad
-            7: pdfWidgets.FlexColumnWidth(2), // Mano de Obra
-            8: pdfWidgets.FlexColumnWidth(2), // Otro
-            9: pdfWidgets.FlexColumnWidth(1), // Cantidad
-            10: pdfWidgets.FlexColumnWidth(2), // URL FOTO
+            0: pdfWidgets.FlexColumnWidth(1), // Departamento
+            1: pdfWidgets.FlexColumnWidth(1), // Ubicación
+            2: pdfWidgets.FlexColumnWidth(3), // Problema
+            3: pdfWidgets.FlexColumnWidth(2), // Material
+            4: pdfWidgets.FlexColumnWidth(2), // Otro
+            5: pdfWidgets.FlexColumnWidth(1), // Cantidad
+            6: pdfWidgets.FlexColumnWidth(2), // Mano de Obra
+            7: pdfWidgets.FlexColumnWidth(2), // Otro
+            8: pdfWidgets.FlexColumnWidth(1), // Cantidad
+            9: pdfWidgets.FlexColumnWidth(2), // URL FOTO
           },
         );
       },
@@ -167,51 +156,133 @@ class _ReporteWidgetState extends State<ReporteF2Widget> {
             return Center(child: Text('Error: ${snapshot.error}'));
           } else {
             List<Map<String, dynamic>> datos = snapshot.data!;
-            return DataTable2.DataTable2(
-              dividerThickness: 5,
-              dataRowHeight: 50,
-              headingRowHeight: 100,
-              columnSpacing: 5,
-              columns: const [
-                DataColumn(label: Text('ID')),
-                DataColumn(label: Text('Formato')),
-                DataColumn(label: Text('Departamento')),
-                DataColumn(label: Text('Ubicación')),
-                DataColumn(label: Text('Problema')),
-                DataColumn(label: Text('Material')),
-                DataColumn(label: Text('Especifique (Otro)')),
-                DataColumn(label: Text('Cantidad')),
-                DataColumn(label: Text('Mano de Obra')),
-                DataColumn(label: Text('Especifique (Otro)')),
-                DataColumn(label: Text('Cantidad')),
-                DataColumn(label: Text('URL FOTO')),
-              ],
-              rows: datos.map((dato) {
-                return DataRow(
-                  cells: [
-                    DataCell(Text('${dato['id_rep']}')),
-                    DataCell(Text('${dato['formato']}')),
-                    DataCell(Text('${dato['nom_dep']}')),
-                    DataCell(Text('${dato['clave_ubi']}')),
-                    DataCell(
-                      Container(
-                        width: 400,
-                        child: Text(
-                          '${dato['nom_probl']}',
-                          softWrap: true,
+            return SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                columnSpacing: (MediaQuery.of(context).size.width / 10) * 0.5,
+                dataRowHeight: 100,
+                columns: [
+                  DataColumn(
+                      label: Center(
+                    child: Text(
+                      'Departamento',
+                      softWrap: true,
+                    ),
+                  )),
+                  DataColumn(
+                      label: Text(
+                    'Ubicación',
+                    softWrap: true,
+                  )),
+                  DataColumn(
+                    label: Text(
+                      'Problema',
+                      softWrap: true,
+                    ),
+                  ),
+                  DataColumn(
+                      label: Text(
+                    'Material',
+                    softWrap: true,
+                  )),
+                  DataColumn(
+                      label: Text(
+                    'Especifique (Otro)',
+                    softWrap: true,
+                  )),
+                  DataColumn(
+                      label: Text(
+                    'Cantidad',
+                    softWrap: true,
+                  )),
+                  DataColumn(
+                      label: Text(
+                    'Mano de Obra',
+                    softWrap: true,
+                  )),
+                  DataColumn(
+                      label: Text(
+                    'Especifique (Otro)',
+                    softWrap: true,
+                  )),
+                  DataColumn(
+                      label: Text(
+                    'Cantidad',
+                    softWrap: true,
+                  )),
+                  DataColumn(
+                      label: Text(
+                    'URL FOTO',
+                    softWrap: true,
+                  )),
+                ],
+                rows: datos.map((dato) {
+                  return DataRow(
+                    cells: [
+                      DataCell(
+                        Container(
+                          child: Text('${dato['nom_dep']}'),
                         ),
                       ),
-                    ),
-                    DataCell(Text('${dato['nom_mat']}')),
-                    DataCell(Text('${dato['otro']}')),
-                    DataCell(Text('${dato['cant_mat']}')),
-                    DataCell(Text('${dato['nom_obr']}')),
-                    DataCell(Text('${dato['otro_obr']}')),
-                    DataCell(Text('${dato['cant_obr']}')),
-                    DataCell(Text('${dato['foto']}')),
-                  ],
-                );
-              }).toList(),
+                      DataCell(
+                        Container(
+                          child: Text('${dato['clave_ubi']}'),
+                        ),
+                      ),
+                      DataCell(
+                        Container(
+                          width: (MediaQuery.of(context).size.width / 10) * 3,
+                          child: Center(child: Text('${dato['nom_probl']}')),
+                          padding: EdgeInsets.all(3),
+                        ),
+                      ),
+                      DataCell(
+                        Container(
+                          width: (MediaQuery.of(context).size.width / 10) * 3,
+                          child: Text('${dato['nom_mat']}'),
+                          padding: EdgeInsets.all(3),
+                        ),
+                      ),
+                      DataCell(
+                        Container(
+                          child: Center(child: Text('${dato['otro']}')),
+                          padding: EdgeInsets.all(3),
+                        ),
+                      ),
+                      DataCell(
+                        Container(
+                          child: Text('${dato['cant_mat']}'),
+                          padding: EdgeInsets.all(3),
+                        ),
+                      ),
+                      DataCell(
+                        Container(
+                          child: Text('${dato['nom_obr']}'),
+                          padding: EdgeInsets.all(3),
+                        ),
+                      ),
+                      DataCell(
+                        Container(
+                          child: Text('${dato['otro_obr']}'),
+                          padding: EdgeInsets.all(3),
+                        ),
+                      ),
+                      DataCell(
+                        Container(
+                          child: Text('${dato['cant_obr']}'),
+                          padding: EdgeInsets.all(3),
+                        ),
+                      ),
+                      DataCell(
+                        Container(
+                          child: Text('${dato['foto']}'),
+                          padding: EdgeInsets.all(3),
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
             );
           }
         },
