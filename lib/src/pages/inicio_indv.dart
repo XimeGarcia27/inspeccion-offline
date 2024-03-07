@@ -167,31 +167,41 @@ class _InicioState extends State<Inicio> {
                             child: DataTable(
                               horizontalMargin: 0,
                               columnSpacing: 10,
+                              dataRowHeight: 90,
                               columns: const [
                                 DataColumn(
                                   label: SizedBox(
-                                    width: 150,
-                                    child: Center(
-                                      child: Text(
-                                        'Ubicación',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 18.0,
-                                        ),
+                                    width: 100,
+                                    child: Text(
+                                      'Ubicación',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18.0,
                                       ),
                                     ),
                                   ),
                                 ),
                                 DataColumn(
-                                    label: Text('Departamento',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 18.0))),
+                                  label: Text('Departamento',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18.0)),
+                                  numeric: true,
+                                ),
                                 DataColumn(
-                                    label: Text('Editar',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 18.0))),
+                                  label: Text('Problema',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18.0)),
+                                  numeric: true,
+                                ),
+                                DataColumn(
+                                  label: Text('Editar',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 18.0)),
+                                  numeric: true,
+                                ),
                               ],
                               rows: filteredReportes.map((item) {
                                 return DataRow(
@@ -199,6 +209,10 @@ class _InicioState extends State<Inicio> {
                                     DataCell(
                                         Text(item['clave_ubi'].toString())),
                                     DataCell(Text(item['nom_dep'].toString())),
+                                    DataCell(Text(
+                                      item['nom_probl'].toString(),
+                                      softWrap: true,
+                                    )),
                                     DataCell(
                                       GestureDetector(
                                         onTap: () {
@@ -213,9 +227,11 @@ class _InicioState extends State<Inicio> {
                                             ),
                                           );
                                         },
-                                        child: const Icon(
-                                          Icons.mode_edit,
-                                          color: Color.fromRGBO(6, 6, 68, 1),
+                                        child: const Center(
+                                          child: Icon(
+                                            Icons.mode_edit,
+                                            color: Color.fromRGBO(6, 6, 68, 1),
+                                          ),
                                         ),
                                       ),
                                     ),

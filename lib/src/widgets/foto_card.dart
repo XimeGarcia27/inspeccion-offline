@@ -27,9 +27,9 @@ class FotoCard extends StatelessWidget {
   BoxDecoration _cardBorders() => BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(25),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: const Color.fromARGB(31, 208, 13, 13),
+            color: Color.fromARGB(31, 208, 13, 13),
             offset: Offset(0, 7),
             blurRadius: 10,
           )
@@ -45,7 +45,7 @@ class _BackgroundImage extends StatelessWidget {
       child: Container(
         width: double.infinity,
         height: 600,
-        child: FadeInImage(
+        child: const FadeInImage(
           placeholder: AssetImage('assets/jar-loading.gif'),
           image: NetworkImage(
               'https://firebasestorage.googleapis.com/v0/b/app-inspecciones.appspot.com/o/Servicios%20maquila%2FCortadora%20l%C3%A1ser%2FIMG_6353.jpg?alt=media&token=c83b9e86-f6e0-46d1-9a49-6038d514acfd'),
