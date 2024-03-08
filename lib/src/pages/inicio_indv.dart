@@ -1,6 +1,6 @@
 import 'package:app_inspections/services/db.dart';
 import 'package:app_inspections/src/pages/editar_form.dart';
-import 'package:app_inspections/src/pages/reporte.dart';
+import 'package:app_inspections/src/pages/reporteGeneral.dart';
 import 'package:app_inspections/src/pages/reporte_F1.dart';
 import 'package:app_inspections/src/pages/reporte_F2.dart';
 import 'package:flutter/material.dart';
@@ -182,25 +182,26 @@ class _InicioState extends State<Inicio> {
                                   ),
                                 ),
                                 DataColumn(
-                                  label: Text('Departamento',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 18.0)),
-                                  numeric: true,
+                                  label: Text(
+                                    'Departamento',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18.0),
+                                  ),
                                 ),
                                 DataColumn(
-                                  label: Text('Problema',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 18.0)),
-                                  numeric: true,
+                                  label: Text(
+                                    'Problema',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 18.0),
+                                  ),
                                 ),
                                 DataColumn(
                                   label: Text('Editar',
                                       style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 18.0)),
-                                  numeric: true,
                                 ),
                               ],
                               rows: filteredReportes.map((item) {
@@ -304,12 +305,6 @@ class _InicioState extends State<Inicio> {
             ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.save),
-        onPressed: () {
-          // Acciones al presionar el botón flotante
-        },
       ),
     );
   }

@@ -1,10 +1,8 @@
-//import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/material.dart';
 import 'package:postgres/postgres.dart';
 
 class DatabaseHelper {
   static PostgreSQLConnection? connection;
-
-  //DatabaseHelper._();//privado
 
   static Future<PostgreSQLConnection> openConnection() async {
     try {
@@ -29,7 +27,6 @@ class DatabaseHelper {
       return connection;
     } catch (e) {
       print('Error al abrir la conexión: $e');
-
       throw e;
     }
   }
@@ -37,9 +34,9 @@ class DatabaseHelper {
   static Future<List<Map<String, dynamic>>> mostrarTiendas() async {
     connection = await openConnection();
     try {
-      print('Antes de la consulta');
+      //print('Antes de la consulta');
       final results = await connection?.query('SELECT * FROM tiendas');
-      print('despues de la consulta');
+      //print('despues de la consulta');
       print('Resultados de la consulta: $results');
 
       if (results != null) {
@@ -51,7 +48,7 @@ class DatabaseHelper {
         return [];
       }
     } catch (e) {
-      print('Error al cargar datos desde Vercel: $e');
+      const Text('Comprueba tu conexión a internet');
       return [];
     } finally {
       if (connection != null) {
@@ -78,11 +75,11 @@ class DatabaseHelper {
             .map((row) => Map<String, dynamic>.from(row.toColumnMap()))
             .toList();
       } else {
-        print('Error al cargar datos desde Vercel en busqueda:');
+        const Text('Comprueba tu conexión a internet');
         return [];
       }
     } catch (e) {
-      print('Error al cargar datos desde Vercel en busqueda: $e');
+      const Text('Vuelve a intentar de nuevo');
       return [];
     } finally {
       if (connection != null) {
@@ -100,9 +97,8 @@ class DatabaseHelper {
       String query) async {
     connection = await openConnection();
     try {
-      print('Antes de la consulta');
       final results = await connection?.query('SELECT * FROM problemas');
-      print('despues de la consulta');
+      //print('despues de la consulta');
       print('Resultados de la consulta: $results');
 
       if (results != null) {
@@ -114,7 +110,7 @@ class DatabaseHelper {
         return [];
       }
     } catch (e) {
-      print('Error al cargar datos desde Vercel: $e');
+      const Text('Comprueba tu conexión a internet');
       return [];
     } finally {
       if (connection != null) {
@@ -132,9 +128,7 @@ class DatabaseHelper {
       String query) async {
     connection = await openConnection();
     try {
-      print('Antes de la consulta');
       final results = await connection?.query('SELECT * FROM materiales');
-      print('despues de la consulta');
       print('Resultados de la consulta: $results');
 
       if (results != null) {
@@ -146,7 +140,7 @@ class DatabaseHelper {
         return [];
       }
     } catch (e) {
-      print('Error al cargar datos desde Vercel: $e');
+      const Text('Comprueba tu conexión a internet');
       return [];
     } finally {
       if (connection != null) {
@@ -163,9 +157,7 @@ class DatabaseHelper {
   static Future<List<Map<String, dynamic>>> mostrarObra(String query) async {
     connection = await openConnection();
     try {
-      print('Antes de la consulta');
       final results = await connection?.query('SELECT * FROM obra');
-      print('despues de la consulta');
       print('Resultados de la consulta: $results');
 
       if (results != null) {
@@ -177,7 +169,7 @@ class DatabaseHelper {
         return [];
       }
     } catch (e) {
-      print('Error al cargar datos desde Vercel: $e');
+      const Text('Comprueba tu conexión a internet');
       return [];
     } finally {
       if (connection != null) {
@@ -252,14 +244,14 @@ class DatabaseHelper {
   }
 
   Future<List<Map<String, dynamic>>> mostrarReporte(int idtienda) async {
-    print("ID TIENDA EN CONSULTA $idtienda");
+    //print("ID TIENDA EN CONSULTA $idtienda");
     connection = await openConnection();
     try {
-      print('Antes de la consulta');
-      final results = await connection?.query(
-          "SELECT * FROM reporte WHERE id_tienda = $idtienda ORDER BY insertion ASC");
+      //print('Antes de la consulta');
+      final results = await connection
+          ?.query("SELECT * FROM reporte WHERE id_tienda = $idtienda");
 
-      print('despues de la consulta');
+      //print('despues de la consulta');
       print('Resultados de la consulta: $results');
 
       if (results != null) {
@@ -271,7 +263,7 @@ class DatabaseHelper {
         return [];
       }
     } catch (e) {
-      print('Error al cargar datos desde Vercel: $e');
+      const Text('Comprueba tu conexión a internet');
       return [];
     } finally {
       if (connection != null) {
@@ -286,14 +278,12 @@ class DatabaseHelper {
   }
 
   Future<List<Map<String, dynamic>>> mostrarReporteF1(int idtienda) async {
-    print("ID TIENDA EN CONSULTA $idtienda");
     connection = await openConnection();
     try {
       print('Antes de la consulta');
       final results = await connection?.query(
           "SELECT * FROM reporte WHERE id_tienda = $idtienda AND formato = 'F1' ");
 
-      print('despues de la consulta');
       print('Resultados de la consulta: $results');
 
       if (results != null) {
@@ -305,7 +295,7 @@ class DatabaseHelper {
         return [];
       }
     } catch (e) {
-      print('Error al cargar datos desde Vercel: $e');
+      const Text('Comprueba tu conexión a intrnet');
       return [];
     } finally {
       if (connection != null) {
@@ -320,14 +310,10 @@ class DatabaseHelper {
   }
 
   Future<List<Map<String, dynamic>>> mostrarReporteF2(int idtienda) async {
-    print("ID TIENDA EN CONSULTA $idtienda");
     connection = await openConnection();
     try {
-      print('Antes de la consulta');
       final results = await connection?.query(
           "SELECT * FROM reporte WHERE id_tienda = $idtienda AND formato = 'F2' ");
-
-      print('despues de la consulta');
       print('Resultados de la consulta: $results');
 
       if (results != null) {
@@ -339,7 +325,7 @@ class DatabaseHelper {
         return [];
       }
     } catch (e) {
-      print('Error al cargar datos desde Vercel: $e');
+      const Text('Comprueba tu conexión a internet');
       return [];
     } finally {
       if (connection != null) {
@@ -354,46 +340,55 @@ class DatabaseHelper {
   }
 
   static Future<void> editarReporte(
-    int idReporte,
+    String idReporte,
+    String formato,
     String valorDepartamento,
     String valorUbicacion,
     int idProbl,
+    String nomProbl,
     int idMat,
+    String nomMat,
+    String otro,
     int cantM,
     int idObra,
+    String nomObr,
+    String otroObr,
     int cantO,
+    String foto,
     int idTiend,
   ) async {
     connection = await openConnection();
     try {
       // Validación de parámetros
-      if (idReporte <= 0 ||
-          valorDepartamento.isEmpty ||
+      if (valorDepartamento.isEmpty ||
           valorUbicacion.isEmpty ||
           idProbl <= 0 ||
-          idMat <= 0 ||
-          cantM <= 0 ||
           idObra <= 0 ||
-          cantO <= 0 ||
           idTiend <= 0) {
         throw ArgumentError(
             'Los parámetros no pueden estar vacíos o ser menores o iguales a cero.');
       }
-
       // Realizar la actualización en la base de datos utilizando una sentencia preparada
       await connection?.query(
-        'UPDATE reporte SET nom_dep = @valorDepartamento, clave_ubi = @valorUbicacion, '
-        'id_probl = @idProbl, id_mat = @idMat, cant_mat = @cantM, id_obr = @idObra, '
-        'cant_obr = @cantO, id_tienda = @idTiend WHERE id_rep = @idReporte',
+        'UPDATE reporte SET formato = @formato, nom_dep = @valorDepartamento, clave_ubi = @valorUbicacion, '
+        'id_probl = @idProbl, nom_probl = @nomProbl, id_mat = @idMat, nom_mat = nomMat, otro = otro, cant_mat = @cantM, id_obr = @idObra, nom_obr = @nomObr, otro_obr = @otroObr,'
+        'cant_obr = @cantO, foto = @foto, id_tienda = @idTiend WHERE id_rep = @idReporte',
         substitutionValues: {
           'idReporte': idReporte,
+          'formato': formato,
           'valorDepartamento': valorDepartamento,
           'valorUbicacion': valorUbicacion,
           'idProbl': idProbl,
+          'nomProbl': nomProbl,
           'idMat': idMat,
+          'nomMat': nomMat,
+          'otro': otro,
           'cantM': cantM,
           'idObra': idObra,
+          'nomObr': nomObr,
+          'otroObr': otroObr,
           'cantO': cantO,
+          'foto': foto,
           'idTiend': idTiend,
         },
       );

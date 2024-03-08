@@ -1,0 +1,5 @@
+{
+    "dart.flutterShowWebServerDevice": "always",
+    "dart.flutterSelectDeviceWhenConnected": true,
+    "dart.flutterRememberSelectedDevice": true
+}

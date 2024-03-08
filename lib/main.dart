@@ -3,7 +3,7 @@ import 'package:app_inspections/services/db.dart';
 import 'package:app_inspections/src/pages/f1.dart';
 import 'package:app_inspections/src/pages/fotos_prueba.dart';
 import 'package:app_inspections/src/pages/inicio_indv.dart';
-import 'package:app_inspections/src/pages/reporte.dart';
+import 'package:app_inspections/src/pages/reporteGeneral.dart';
 import 'package:app_inspections/src/pages/screens.dart';
 import 'package:app_inspections/src/screens/home_foto.dart';
 import 'package:firebase_core/firebase_core.dart';

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 class AnimatedContainerExample extends StatefulWidget {
   @override
-  _AnimatedContainerExampleState createState() => _AnimatedContainerExampleState();
+  _AnimatedContainerExampleState createState() =>
+      _AnimatedContainerExampleState();
 }
 
 class _AnimatedContainerExampleState extends State<AnimatedContainerExample> {
@@ -30,3 +31,51 @@ class _AnimatedContainerExampleState extends State<AnimatedContainerExample> {
     );
   }
 }
+
+/*
+// Definimos un mapa para almacenar las sumas de las cantidades de cada material
+Map<String, double> cantidadesTotales = {};
+
+// Iteramos sobre los datos para calcular las sumas de las cantidades
+datos.forEach((dato) {
+  String nombreMaterial = dato['nom_mat'];
+  double cantidadMaterial = dato['cant_mat'];
+  
+  // Verificamos si el material ya está en el mapa
+  if (cantidadesTotales.containsKey(nombreMaterial)) {
+    // Si ya existe, sumamos la cantidad
+    cantidadesTotales[nombreMaterial] += cantidadMaterial;
+  } else {
+    // Si no existe, lo agregamos al mapa con su cantidad
+    cantidadesTotales[nombreMaterial] = cantidadMaterial;
+  }
+});
+
+// Ahora, puedes usar cantidadesTotales para mostrar las sumas en la tabla
+
+return DataTable2.DataTable2(
+  // Otras propiedades...
+  columns: [
+    // Otras columnas...
+    DataColumn(label: Text('Total por Material')),
+  ],
+  rows: cantidadesTotales.entries.map((entry) {
+    return DataRow(
+      cells: [
+        // Celdas de otras columnas...
+        DataCell(Text(entry.key)), // Nombre del material
+        DataCell(Text(entry.value.toString())), // Total de cantidad
+      ],
+    );
+  }).toList(),
+);
+
+
+
+
+
+
+
+
+
+*/ 

@@ -1,12 +1,7 @@
 import 'dart:async';
-
 import 'package:app_inspections/services/db.dart';
-import 'package:app_inspections/src/pages/add_mat.dart';
-import 'package:app_inspections/src/pages/add_problem.dart';
-import 'package:app_inspections/src/pages/mano_obra.dart';
-import 'package:app_inspections/src/screens/home_foto.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter/services.dart';
 
 class EditarForm extends StatelessWidget {
   final int idTienda;
@@ -78,6 +73,7 @@ class _EditMyFormState extends State<EditMyForm> {
   @override
   void initState() {
     super.initState();
+    selectedFormato = widget.data['formato'];
     _departamentoController.text = widget.data['nom_dep'];
     _ubicacionController.text = widget.data['clave_ubi'];
     idProbl = widget.data['id_probl'];
@@ -93,20 +89,21 @@ class _EditMyFormState extends State<EditMyForm> {
   final TextEditingController _ubicacionController = TextEditingController();
   final TextEditingController _cantmatController = TextEditingController();
   final TextEditingController _cantobraController = TextEditingController();
+  final TextEditingController _otroMPController = TextEditingController();
+  final TextEditingController _otroObraController = TextEditingController();
 
   int idTiend = 0;
   int idProbl = 0;
   int idMat = 0;
   int idObra = 0;
-  int idReporte = 0;
+  String idReporte = "";
+  String selectedFormato = "F1";
 
   _EditMyFormState({required this.idTienda, required this.context});
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  final ImagePicker _picker = ImagePicker();
   List<String> imagePaths =
       []; // Lista para almacenar las rutas de las imágenes
-  XFile? _image;
 
   final TextEditingController _textEditingControllerProblema =
       TextEditingController();
@@ -130,17 +127,9 @@ class _EditMyFormState extends State<EditMyForm> {
   bool isObraSelected = false;
 
   final FocusNode _cantidadFocus = FocusNode();
+  final FocusNode _focusOtO = FocusNode();
 
   // Función para abrir la cámara y seleccionar imágenes
-  Future<void> _getImage() async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.camera);
-    setState(() {
-      _image = image;
-      if (_image != null) {
-        imagePaths.add(_image!.path); // Agregar la ruta de la imagen a la lista
-      }
-    });
-  }
 
   void _checkIfButtonShouldBeEnabled() {
     final bool isDepartamento = _departamentoController.text.isNotEmpty;
@@ -271,7 +260,7 @@ class _EditMyFormState extends State<EditMyForm> {
       isProblemSelected = true;
       //_idproblController.text = idProbl.toString();
       idProbl = idProblemaSeleccionado;
-      print('ID del problema seleccionado: $idProbl');
+      //print('ID del problema seleccionado: $idProbl');
     });
   }
 
@@ -282,7 +271,7 @@ class _EditMyFormState extends State<EditMyForm> {
       isObraSelected = true;
       //_idobraController.text = idObra.toString();
       idObra = idObraSeleccionado;
-      print('OBRAA SELECCIONADO: $idObra');
+      //print('OBRAA SELECCIONADO: $idObra');
     });
   }
 
@@ -292,10 +281,20 @@ class _EditMyFormState extends State<EditMyForm> {
       String valorUbicacion = _ubicacionController.text;
       String valorCanMate = _cantmatController.text;
       String valorCanObra = _cantobraController.text;
-
-      int cantM = int.parse(valorCanMate);
-      int cantO = int.parse(valorCanObra);
+      String nomProbl = _textEditingControllerProblema.text;
+      String nomMat = _textEditingControllerMaterial.text;
+      String nomObra = _textEditingControllerObra.text;
+      String otro = _otroMPController.text;
+      String otroO = _otroObraController.text;
+      int cantM = 0;
+      int cantO = 0;
+      String foto = "HJHFDVJDHVBJHFVB";
       idReporte = widget.data['id_rep'];
+
+      if (valorCanMate.isNotEmpty || valorCanObra.isNotEmpty) {
+        cantM = int.parse(valorCanMate);
+        cantO = int.parse(valorCanObra);
+      }
 
       print("DATOOOSS VALOR DEPART $valorDepartamento");
       print("DATOOOSS VALOR UBI $valorUbicacion");
@@ -303,17 +302,25 @@ class _EditMyFormState extends State<EditMyForm> {
       print("DATOOOSS ID MAT $idMat");
       print("DATOOOSS CANT M $cantM");
       print("DATOOOSS CANT O $cantO");
+      print("FOTO $foto");
       print("DATOOOSS ID TIENDA $idTiend");
       try {
         DatabaseHelper.editarReporte(
           idReporte,
+          selectedFormato,
           valorDepartamento,
           valorUbicacion,
           idProbl,
+          nomProbl,
           idMat,
+          nomMat,
+          otro,
           cantM,
           idObra,
+          nomObra,
+          otroO,
           cantO,
+          foto,
           idTiend,
         );
         // Muestra una alerta de "Edición terminada"
@@ -322,8 +329,8 @@ class _EditMyFormState extends State<EditMyForm> {
           builder: (BuildContext context) {
             nombreTienda = widget.nombreTienda;
             return AlertDialog(
-              title: Text('Edición terminada'),
-              content: Text('¡Los datos han sido editados con éxito!'),
+              title: const Text('Edición terminada'),
+              content: const Text('¡Los datos han sido editados con éxito!'),
               actions: [
                 TextButton(
                   onPressed: () {
@@ -378,6 +385,24 @@ class _EditMyFormState extends State<EditMyForm> {
               children: [
                 Text('Editar Inspección',
                     style: Theme.of(context).textTheme.headlineMedium),
+                DropdownButtonFormField(
+                  value: selectedFormato,
+                  onChanged: (newValue) {
+                    setState(() {
+                      selectedFormato = newValue!;
+                    });
+                  },
+                  items: <String>['F1', 'F2']
+                      .map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  decoration: const InputDecoration(
+                      labelText:
+                          'Selecciona el formato de tu defecto (F1 o F2)'),
+                ),
                 TextFormField(
                   controller: _departamentoController,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -487,25 +512,6 @@ class _EditMyFormState extends State<EditMyForm> {
                 const SizedBox(
                   height: 20,
                 ),
-                Row(
-                  children: [
-                    Flexible(
-                      flex: 1,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return const AgregarProblema(); // Aquí creas una instancia de tu pantalla AgregarProblema
-                            },
-                          );
-                        },
-                        icon: const Icon(Icons.add),
-                        label: const Text('Agregar nuevo defecto'),
-                      ),
-                    ),
-                  ],
-                ),
                 TextFormField(
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: _textEditingControllerMaterial,
@@ -581,33 +587,28 @@ class _EditMyFormState extends State<EditMyForm> {
                       ),
                     ),
                   ),
-                const SizedBox(
-                  height: 20,
-                ),
-                Row(
-                  children: [
-                    Flexible(
-                      flex: 1,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return const AddMaterial(); // Aquí creas una instancia de tu pantalla AgregarProblema
-                            },
-                          );
-                        },
-                        icon: const Icon(Icons.add),
-                        label: const Text('Agregar nuevo material'),
-                      ),
-                    ),
-                  ],
+                TextFormField(
+                  controller: _otroMPController,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  decoration:
+                      const InputDecoration(labelText: 'Especifique otro'),
+                  validator: (value) {
+                    // Validar si el campo está vacío solo si el usuario ha interactuado con él
+                    if (_otroMPController.text.isEmpty &&
+                        _otroMPController.text.isNotEmpty) {
+                      return 'Este campo es obligatorio';
+                    }
+                    return null;
+                  },
                 ),
                 TextFormField(
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: _cantmatController,
                   decoration:
                       const InputDecoration(labelText: 'Cantidad de Material'),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
                   validator: (value) {
                     // Validar si el campo está vacío solo si el usuario ha interactuado con él
                     if (_cantmatController.text.isEmpty &&
@@ -619,27 +620,6 @@ class _EditMyFormState extends State<EditMyForm> {
                 ),
                 const SizedBox(
                   height: 30,
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment
-                      .center, // Centra los elementos horizontalmente
-                  children: [
-                    Flexible(
-                      flex: 1,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return HomeFoto(); // Aquí creas una instancia de tu pantalla AgregarProblema
-                            },
-                          );
-                        },
-                        icon: const Icon(Icons.camera),
-                        label: const Text('Tomar fotografía'),
-                      ),
-                    ),
-                  ],
                 ),
                 const SizedBox(height: 25),
                 TextFormField(
@@ -716,28 +696,19 @@ class _EditMyFormState extends State<EditMyForm> {
                       ),
                     ),
                   ),
-                const SizedBox(
-                  height: 20,
-                ),
-                Row(
-                  children: [
-                    Flexible(
-                      flex: 1,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return const ManoObra();
-                            },
-                          );
-                        },
-                        icon: const Icon(Icons.add),
-                        label:
-                            const Text('Agregar descripción de mano de obra'),
-                      ),
-                    ),
-                  ],
+                TextFormField(
+                  focusNode: _focusOtO,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  controller: _otroObraController,
+                  decoration: const InputDecoration(
+                      labelText: 'Especifique otro (Mano de Obra)'),
+                  validator: (value) {
+                    if (_otroObraController.text.isEmpty &&
+                        _otroObraController.text.isNotEmpty) {
+                      return 'Este campo es obligatorio';
+                    }
+                    return null;
+                  },
                 ),
                 TextFormField(
                   focusNode: _cantidadFocus,
@@ -745,6 +716,9 @@ class _EditMyFormState extends State<EditMyForm> {
                   controller: _cantobraController,
                   decoration: const InputDecoration(
                       labelText: 'Cantidad de Material para Mano de Obra'),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
                   validator: (value) {
                     if (_cantobraController.text.isEmpty &&
                         _cantobraController.text.isNotEmpty) {
@@ -752,6 +726,23 @@ class _EditMyFormState extends State<EditMyForm> {
                     }
                     return null;
                   },
+                ),
+                const SizedBox(
+                  height: 20,
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment
+                      .center, // Centra los elementos horizontalmente
+                  children: [
+                    Flexible(
+                      flex: 1,
+                      child: ElevatedButton.icon(
+                        onPressed: () => {},
+                        icon: const Icon(Icons.camera),
+                        label: const Text('Tomar fotografía'),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 25),
                 ElevatedButton(

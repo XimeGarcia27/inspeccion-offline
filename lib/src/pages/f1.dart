@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:app_inspections/services/db.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -193,8 +195,12 @@ class _MyFormState extends State<MyForm> {
   int lastGeneratedId = 0;
   // Función para generar un ID único que aumenta en uno cada vez
   String generateUniqueId() {
-    lastGeneratedId++; // Incrementa el último ID generado
-    return lastGeneratedId.toString(); // Devuelve el nuevo ID generado
+    var random = Random();
+    // Limita el número generado por nextInt() a un rango específico para reducir el tamaño
+    // Aquí, limitamos el número a un rango entre 0 y 9999 (inclusive)
+    int randomNumber = random.nextInt(9999);
+    return DateTime.now().millisecondsSinceEpoch.toString() +
+        randomNumber.toString();
   }
 
   // Función para guardar datos con confirmación
@@ -291,6 +297,7 @@ class _MyFormState extends State<MyForm> {
         }
 
         _save();
+        datosIngresados.clear();
       } catch (e) {
         // Manejo de errores
         print('Error al insertar el reporte: $e');
@@ -616,8 +623,8 @@ class _MyFormState extends State<MyForm> {
                 TextFormField(
                   controller: _otroMPController,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
-                  decoration: const InputDecoration(
-                      labelText: 'Especifique otro Material'),
+                  decoration:
+                      const InputDecoration(labelText: 'Especifique otro'),
                   validator: (value) {
                     // Validar si el campo está vacío solo si el usuario ha interactuado con él
                     if (_otroMPController.text.isEmpty &&
