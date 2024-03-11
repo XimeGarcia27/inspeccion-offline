@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 class LoginFormProvider extends ChangeNotifier {
   GlobalKey<FormState> formkey = GlobalKey<FormState>();
 
-  String email = '';
+  String name = '';
+  String usuario = '';
   String password = '';
 // Agregar campo para el nombre
 
@@ -18,7 +19,7 @@ class LoginFormProvider extends ChangeNotifier {
   bool isValidForm() {
     print(formkey.currentState?.validate());
 
-    print('$email - $password');
+    print('$usuario - $password');
 
     //para ver si es formulario es valido
     return formkey.currentState?.validate() ?? false;

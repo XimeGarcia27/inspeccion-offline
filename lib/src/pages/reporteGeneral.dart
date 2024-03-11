@@ -40,8 +40,6 @@ class ReporteWidget extends StatefulWidget {
 
 class _ReporteWidgetState extends State<ReporteWidget> {
   late Future<List<Map<String, dynamic>>> _futureReporte;
-  Map<String, double> _cantidadesTotales =
-      {}; // Mapa para almacenar las cantidades totales
 
   @override
   void initState() {
@@ -54,40 +52,21 @@ class _ReporteWidgetState extends State<ReporteWidget> {
     return await databaseHelper.mostrarReporte(widget.idTienda);
   }
 
-  // Método para calcular las cantidades totales para cada material
-  void _calcularCantidadesTotales(List<Map<String, dynamic>> datos) {
-    // Reiniciar el mapa de cantidades totales
-    _cantidadesTotales = {};
-
-    // Iterar sobre los datos del reporte y actualizar las cantidades totales
-    for (var dato in datos) {
-      String nombreMaterial = dato['nom_mat'];
-      String cantidadMaterialString = dato['cant_mat'];
-      double cantidadMaterial = double.parse(cantidadMaterialString);
-
-      _cantidadesTotales.update(
-        nombreMaterial,
-        (existingValue) => existingValue + cantidadMaterial,
-        ifAbsent: () => cantidadMaterial,
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _futureReporte,
       builder: (context, snapshotReporte) {
         if (snapshotReporte.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
         } else if (snapshotReporte.hasError) {
           return Center(child: Text('Error: ${snapshotReporte.error}'));
         } else {
           List<Map<String, dynamic>> datos = snapshotReporte.data!;
-          _calcularCantidadesTotales(datos); // Calcular las cantidades totales
-
+          calcularCantidadesTotales(datos); // Calcular las cantidades totales
+          setState(() {});
           List<DataRow> rows = [];
-          _cantidadesTotales.forEach((nombreMaterial, cantidadTotal) {
+          cantidadesTotales.forEach((nombreMaterial, cantidadTotal) {
             rows.add(
               DataRow(cells: [
                 DataCell(Text(nombreMaterial)),

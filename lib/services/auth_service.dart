@@ -1,76 +1,110 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:postgres/postgres.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+
+enum AuthState { authenticated, unauthenticated }
 
 class AuthService extends ChangeNotifier {
-  final String _baseUrl = 'identitytoolkit.googleapis.com';
-  final String _firebaseToken = 'AIzaSyCfBYbPnzrQwsgfgYsVVqz4Us28dF33f1w';
-  final GoogleSignIn googleSignIn = GoogleSignIn();
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  AuthState _authState = AuthState.unauthenticated;
+  AuthState get authState => _authState;
+
+  String? _currentUser;
+  String? get currentUser => _currentUser;
+
+  final String _databaseHost =
+      'ep-red-wood-a4nzhmfu-pooler.us-east-1.postgres.vercel-storage.com';
+  final int _databasePort = 5432;
+  final String _databaseName = 'verceldb';
+  final String _username = 'default';
+  final String _password = 'Iqkc7nFOlR6d';
+
   final storage = const FlutterSecureStorage();
 
-  // si retornamos algo , es un error, si no , todo bien
-  Future<String?> createUser(String email, String password) async {
+  Future<PostgreSQLConnection> openConnection() async {
     try {
-      UserCredential userCredential =
-          await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
+      final connection = PostgreSQLConnection(
+        _databaseHost,
+        _databasePort,
+        _databaseName,
+        username: _username,
+        password: _password,
+        useSSL: true,
       );
-      print('Usuario registrado: ${userCredential.user?.email}');
+
+      await connection.open();
+      print('BASE CONECTADA');
+      return connection;
+    } catch (e) {
+      print('Error al abrir la conexión: $e');
+      throw e;
+    }
+  }
+
+  Future<void> closeConnection() async {
+    final connection = await openConnection();
+    await connection.close();
+    print('Conexión a PostgreSQL cerrada');
+  }
+
+  // Método para establecer el nombre de usuario actual
+  void setCurrentUser(String username) {
+    _currentUser = username;
+    notifyListeners(); // Notificar a los listeners que el estado ha cambiado
+  }
+
+  Future<String?> createUser(
+      String name, String email, String contrasena) async {
+    try {
+      final connection = await openConnection();
+      await connection.query(
+          'INSERT INTO usuarios (nombre, email, password) VALUES (@name, @email, @contrasena)',
+          substitutionValues: {
+            'name': name,
+            'email': email,
+            'contrasena': contrasena
+          });
+      print('Usuario registrado: $name');
+      print('Usuario registrado: $email');
+      print('Usuario registrado: $contrasena');
       return null;
-    } on FirebaseAuthException catch (e) {
+    } catch (e) {
       print('Error al registrar usuario: $e');
-      // Puedes manejar diferentes errores según tus necesidades
-      return e.message;
+      return e.toString();
     }
   }
 
-  Future<String?> login(String email, String password) async {
+  Future<String?> login(String email, String contrasena) async {
     try {
-      UserCredential userCredential =
-          await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      print('Usuario autenticado: ${userCredential.user?.email}');
-      verificarAutenticacion();
-      return null;
-    } on FirebaseAuthException catch (e) {
-      print('Error al iniciar sesión: $e');
-      // Puedes manejar diferentes errores según tus necesidades
-      return e.message;
-    }
-  }
+      final connection = await openConnection();
+      final result = await connection.query(
+          'SELECT email FROM usuarios WHERE email = @email AND password = @contrasena',
+          substitutionValues: {'email': email, 'contrasena': contrasena});
+      if (result.isNotEmpty) {
+        // Obtiene el nombre de usuario del resultado de la consulta
+        final nombreUsuario = result[0][0] as String;
 
-  Future<String?> verificarAutenticacion() async {
-    FirebaseAuth _auth = FirebaseAuth.instance;
-    User? user = _auth.currentUser;
-
-    try {
-      print('Verificando autenticación...');
-
-      if (user != null) {
-        print('TOKEN VALIDO $user');
-        // Realiza acciones adicionales si es necesario
+        // Establece el nombre de usuario en el servicio de autenticación
+        setCurrentUser(nombreUsuario);
+        _authState = AuthState.authenticated;
+        notifyListeners();
+        return null;
       } else {
-        print(
-            'Usuario no autenticado. Redirigiendo al inicio de sesión. $user');
-        // Redirige a la pantalla de inicio de sesión o realiza acciones adicionales
-        // según tus necesidades de manejo de autenticación.
+        return 'Credenciales incorrectas';
       }
     } catch (e) {
-      print('Error en verificarAutenticacion(): $e');
+      print('Error al iniciar sesión: $e');
+      return e.toString();
     }
   }
 
-  Future logout() async {
+  Future<void> logout() async {
     await storage.delete(key: 'token');
-    return;
+    _authState = AuthState.unauthenticated;
+    notifyListeners();
+    print('Usuario desconectado');
   }
 
-  Future<String> readToken() async {
+  Future<String?> readToken() async {
     return await storage.read(key: 'token') ?? '';
   }
 }

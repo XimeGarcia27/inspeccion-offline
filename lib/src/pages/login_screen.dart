@@ -17,7 +17,7 @@ class LoginScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(
-                  height: 250), // Espacio para mover el contenido hacia abajo
+                  height: 400), // Espacio para mover el contenido hacia abajo
               CardContainer(
                 child: Column(
                   children: [
@@ -52,7 +52,7 @@ class LoginScreen extends StatelessWidget {
                 child: Text(
                   'Crear una nueva cuenta',
                   style: TextStyle(
-                    fontSize: MediaQuery.of(context).size.width * 0.03,
+                    fontSize: MediaQuery.of(context).size.width * 0.02,
                     fontWeight: FontWeight.bold,
                     color: const Color.fromRGBO(169, 27, 96, 1),
                   ),
@@ -84,20 +84,19 @@ class _LoginForm extends StatelessWidget {
             child: TextFormField(
               // Configuraciones del cuadro de texto
               autocorrect: false,
-              keyboardType: TextInputType.emailAddress,
-              onChanged: (value) => loginForm.email = value,
+              keyboardType: TextInputType.name,
+              onChanged: (value) => loginForm.usuario = value,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
               validator: (value) {
-                String pattern = r'^[a-zA-Z0-9_.+-]+@gmail\.com$';
-                RegExp regExp = RegExp(pattern);
-
-                return regExp.hasMatch(value ?? '')
-                    ? null
-                    : 'Por favor, introduce un correo electrónico válido de Gmail';
+                if (value!.isEmpty) {
+                  return 'Escribe tu usuario';
+                }
+                return null;
               },
               // Decoración del cuadro de texto
               decoration: InputDecoration(
-                hintText: 'example@gmail.com',
-                labelText: 'Correo electrónico',
+                hintText: 'Nombre de Usuario',
+                labelText: 'Usuario',
                 prefixIcon: const Icon(Icons.alternate_email_rounded),
                 // Cambiar el color del borde del cuadro de texto
                 enabledBorder: OutlineInputBorder(
@@ -124,9 +123,10 @@ class _LoginForm extends StatelessWidget {
             child: TextFormField(
               // Configuraciones del cuadro de texto
               autocorrect: false,
-              keyboardType: TextInputType.emailAddress,
+              keyboardType: TextInputType.visiblePassword,
               obscureText: true, // Para ocultar la contraseña
               onChanged: (value) => loginForm.password = value,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
               validator: (value) {
                 return (value != null && value.length >= 6)
                     ? null
@@ -163,13 +163,6 @@ class _LoginForm extends StatelessWidget {
             disabledColor: Colors.grey,
             elevation: 0,
             color: const Color.fromRGBO(6, 6, 68, 1),
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 80, vertical: 15),
-              child: Text(
-                loginForm.isLoading ? 'Espere' : 'Ingresar',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
             onPressed: loginForm.isLoading
                 ? null
                 : () async {
@@ -182,7 +175,7 @@ class _LoginForm extends StatelessWidget {
                     loginForm.isLoading = true;
 
                     final String? errorMessage = await authService.login(
-                        loginForm.email, loginForm.password);
+                        loginForm.usuario, loginForm.password);
                     if (errorMessage == null) {
                       // ignore: use_build_context_synchronously
                       Navigator.pushReplacementNamed(
@@ -194,6 +187,13 @@ class _LoginForm extends StatelessWidget {
                       loginForm.isLoading = false;
                     }
                   },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 15),
+              child: Text(
+                loginForm.isLoading ? 'Espere' : 'Ingresar',
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
           ),
         ],
       ),

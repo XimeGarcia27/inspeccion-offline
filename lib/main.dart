@@ -5,6 +5,7 @@ import 'package:app_inspections/src/pages/fotos_prueba.dart';
 import 'package:app_inspections/src/pages/inicio_indv.dart';
 import 'package:app_inspections/src/pages/reporteGeneral.dart';
 import 'package:app_inspections/src/pages/screens.dart';
+import 'package:app_inspections/src/pages/users.dart';
 import 'package:app_inspections/src/screens/home_foto.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -12,20 +13,16 @@ import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await Firebase.initializeApp();
-
   final dbHelper = DatabaseHelper();
-  await DatabaseHelper.openConnection();
+  await AuthService().openConnection();
   runApp(AppState(dbHelper: dbHelper));
 }
 
 class NotificationsServices {
   static GlobalKey<ScaffoldMessengerState> messengerKey =
       GlobalKey<ScaffoldMessengerState>();
-  static void init() {
-    // Inicializar cualquier configuración necesaria aquí
-  }
+  static void init() {}
 }
 
 class AppState extends StatelessWidget {
@@ -51,7 +48,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      initialRoute: "inicioInsp",
+      initialRoute: "login",
       routes: {
         "splash": (_) => const SplashScreen(),
         "registro": (_) => const RegistroScreen(),
@@ -66,8 +63,7 @@ class MyApp extends StatelessWidget {
             const InicioScreen(idTienda: 1, initialTabIndex: 0, nomTienda: ''),
         "home": (_) => HomeFoto(),
         "foto": (_) => FotosPrueba(),
-        //"image": (_) => ImageDisplayScreen(),
-        //"cheking":    (_) => CheckAuthScreen(),
+        "user": (_) => const UserInsertion(),
       },
       scaffoldMessengerKey: NotificationsServices.messengerKey,
       theme: ThemeData.light().copyWith(

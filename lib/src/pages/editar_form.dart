@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'package:app_inspections/services/auth_service.dart';
 import 'package:app_inspections/services/db.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
 class EditarForm extends StatelessWidget {
   final int idTienda;
@@ -15,6 +17,7 @@ class EditarForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authService = Provider.of<AuthService>(context, listen: false);
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 100,
@@ -31,6 +34,37 @@ class EditarForm extends StatelessWidget {
           style: const TextStyle(fontSize: 24.0, color: Colors.white),
         ),
         centerTitle: true,
+        actions: [
+          PopupMenuButton<PopupMenuEntry>(
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                enabled: false,
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      backgroundImage: AssetImage("assets/inicio.png"),
+                    ),
+                    const SizedBox(
+                        width: 10), // Espacio entre la imagen y el texto
+                    Text(
+                      ' ${authService.currentUser}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                child: const Text("Cerrar Sesión"),
+                onTap: () {
+                  authService.logout();
+                  Navigator.pushReplacementNamed(context, 'login');
+                },
+              ),
+            ],
+          ),
+        ],
       ),
       body: EditMyForm(
         idTienda: idTienda,

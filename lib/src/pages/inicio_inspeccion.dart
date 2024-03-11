@@ -38,6 +38,7 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context, listen: false);
+    // Después de que el usuario inicie sesión con éxito
 
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 174, 174, 174),
@@ -56,16 +57,37 @@ class _HomeState extends State<Home> {
               textAlign: TextAlign.center,
             ),
             Spacer(),
-            //Icon(Icons.exit_to_app_rounded, size: 40, color: Colors.white),
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.login_outlined, color: Colors.white),
-            onPressed: () {
-              authService.logout();
-              Navigator.pushReplacementNamed(context, 'login');
-            },
+          PopupMenuButton<PopupMenuEntry>(
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                enabled: false,
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      backgroundImage: AssetImage("assets/inicio.png"),
+                    ),
+                    const SizedBox(
+                        width: 10), // Espacio entre la imagen y el texto
+                    Text(
+                      ' ${authService.currentUser}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                child: const Text("Cerrar Sesión"),
+                onTap: () {
+                  authService.logout();
+                  Navigator.pushReplacementNamed(context, 'login');
+                },
+              ),
+            ],
           ),
         ],
         toolbarHeight: 110.0,

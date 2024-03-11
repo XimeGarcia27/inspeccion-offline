@@ -43,7 +43,6 @@ class MyForm extends StatefulWidget {
 
 class _MyFormState extends State<MyForm> {
   final int idTienda;
-  String idTien = '';
   @override
   final BuildContext context;
   //bool _isButtonDisabled = true;
@@ -198,7 +197,7 @@ class _MyFormState extends State<MyForm> {
     var random = Random();
     // Limita el número generado por nextInt() a un rango específico para reducir el tamaño
     // Aquí, limitamos el número a un rango entre 0 y 9999 (inclusive)
-    int randomNumber = random.nextInt(9999);
+    int randomNumber = random.nextInt(0009);
     return DateTime.now().millisecondsSinceEpoch.toString() +
         randomNumber.toString();
   }

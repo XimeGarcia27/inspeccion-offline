@@ -1,6 +1,8 @@
+import 'package:app_inspections/services/auth_service.dart';
 import 'package:app_inspections/src/pages/f1.dart';
 import 'package:app_inspections/src/pages/inicio_indv.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class InspeccionTienda extends StatefulWidget {
   final int initialTabIndex;
@@ -40,6 +42,7 @@ class _InspeccionTiendaState extends State<InspeccionTienda>
 
   @override
   Widget build(BuildContext context) {
+    final authService = Provider.of<AuthService>(context, listen: false);
     // Obtén los datos de la tienda desde los argumentos
     Map<String, dynamic> arguments =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
@@ -88,6 +91,37 @@ class _InspeccionTiendaState extends State<InspeccionTienda>
             ),
           ],
         ),
+        actions: [
+          PopupMenuButton<PopupMenuEntry>(
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                enabled: false,
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      backgroundImage: AssetImage("assets/inicio.png"),
+                    ),
+                    const SizedBox(
+                        width: 10), // Espacio entre la imagen y el texto
+                    Text(
+                      ' ${authService.currentUser}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                child: const Text("Cerrar Sesión"),
+                onTap: () {
+                  authService.logout();
+                  Navigator.pushReplacementNamed(context, 'login');
+                },
+              ),
+            ],
+          ),
+        ],
       ),
       body: TabBarView(
         controller: controller,

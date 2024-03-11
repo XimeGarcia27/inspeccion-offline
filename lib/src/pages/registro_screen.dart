@@ -83,19 +83,51 @@ class _LoginForm extends StatelessWidget {
             // Configuraciones del cuadro de texto
             autocorrect: false,
             keyboardType: TextInputType.emailAddress,
-            onChanged: (value) => loginForm.email = value,
+            onChanged: (value) => loginForm.name = value,
             validator: (value) {
-              String pattern = r'^[a-zA-Z0-9_.+-]+@gmail\.com$';
-              RegExp regExp = RegExp(pattern);
-
-              return regExp.hasMatch(value ?? '')
-                  ? null
-                  : 'Por favor, introduce un correo electrónico válido de Gmail';
+              if (value!.isEmpty) {
+                return 'Escribe tu nombre completo';
+              }
+              return null;
             },
             // Decoración del cuadro de texto
             decoration: InputDecoration(
-              hintText: 'example@gmail.com',
-              labelText: 'Correo electrónico',
+              hintText: 'Nombre Completo',
+              labelText: 'Nombre Completo',
+              prefixIcon: const Icon(Icons.alternate_email_rounded),
+              // Cambiar el color del borde del cuadro de texto
+              enabledBorder: OutlineInputBorder(
+                borderSide: const BorderSide(
+                    color: Color.fromRGBO(
+                        169, 27, 96, 1)), // Cambia el color del borde aquí
+                borderRadius: BorderRadius.circular(10.0),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: const BorderSide(
+                    color: Color.fromRGBO(
+                        169, 27, 96, 1)), // Cambia el color del borde aquí
+                borderRadius: BorderRadius.circular(10.0),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 30), //separar renglones
+
+          TextFormField(
+            // Configuraciones del cuadro de texto
+            autocorrect: false,
+            keyboardType: TextInputType.emailAddress,
+            onChanged: (value) => loginForm.usuario = value,
+            validator: (value) {
+              if (value!.isEmpty) {
+                return 'Escribe tu nombre completo';
+              }
+              return null;
+            },
+            // Decoración del cuadro de texto
+            decoration: InputDecoration(
+              hintText: 'Conexsa21',
+              labelText: 'Nombre de Usuario',
               prefixIcon: const Icon(Icons.alternate_email_rounded),
               // Cambiar el color del borde del cuadro de texto
               enabledBorder: OutlineInputBorder(
@@ -175,7 +207,9 @@ class _LoginForm extends StatelessWidget {
                       loginForm.isLoading = true;
 
                       final String? errorMessage = await authService.createUser(
-                          loginForm.email, loginForm.password);
+                          loginForm.name,
+                          loginForm.usuario,
+                          loginForm.password);
                       if (errorMessage == null) {
                         // ignore: use_build_context_synchronously
                         Navigator.pushReplacementNamed(
