@@ -1,10 +1,12 @@
-import 'dart:math';
-
+import 'package:app_inspections/services/auth_service.dart';
 import 'package:app_inspections/services/db.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:app_inspections/services/functions.dart';
+import 'package:provider/provider.dart';
+// ignore: depend_on_referenced_packages
+import 'package:uuid/uuid.dart';
 
 class F1Screen extends StatelessWidget {
   final int idTienda;
@@ -64,6 +66,7 @@ class _MyFormState extends State<MyForm> {
   int idMat = 0;
   int idObra = 0;
   String selectedFormato = "F1";
+  bool isGuardarHabilitado = false;
 
   List<String> problemasEscritos = [];
   List<String> materialesEscritos = [];
@@ -191,15 +194,11 @@ class _MyFormState extends State<MyForm> {
           !(isDepartamento && isUbicacion && isProblem && isObra);
     });
   } */
-  int lastGeneratedId = 0;
+  //int lastGeneratedId = 0;
   // Función para generar un ID único que aumenta en uno cada vez
   String generateUniqueId() {
-    var random = Random();
-    // Limita el número generado por nextInt() a un rango específico para reducir el tamaño
-    // Aquí, limitamos el número a un rango entre 0 y 9999 (inclusive)
-    int randomNumber = random.nextInt(0009);
-    return DateTime.now().millisecondsSinceEpoch.toString() +
-        randomNumber.toString();
+    var uuid = Uuid();
+    return uuid.v4();
   }
 
   // Función para guardar datos con confirmación
@@ -229,16 +228,6 @@ class _MyFormState extends State<MyForm> {
         int cantO = 0;
         String foto = "HJHFDVJDHVBJHFVB";
         String idUnico = generateUniqueId();
-        int id = 0;
-        id = int.parse(idUnico);
-
-        if (valorCanMate.isNotEmpty || valorCanObra.isNotEmpty) {
-          cantM = int.parse(valorCanMate);
-          cantO = int.parse(valorCanObra);
-        }
-
-        print("DATOS DEL ARREGLO");
-        print(datosIngresados);
 
         for (var datos in datosIngresados) {
           // Usar un valor predeterminado si el valor es nulo
@@ -257,6 +246,11 @@ class _MyFormState extends State<MyForm> {
           valorCanObra = datos['Cantidad_Obra'] ?? 0;
           foto = datos['Foto'] ?? 0;
 
+          if (valorCanMate.isNotEmpty || valorCanObra.isNotEmpty) {
+            cantM = int.parse(valorCanMate);
+            cantO = int.parse(valorCanObra);
+          }
+
           print("DATOS DEL ARREGLO");
           print("ID UNICO $idUnico");
           print("FORMATO $selectedFormato");
@@ -267,16 +261,16 @@ class _MyFormState extends State<MyForm> {
           print("ID MATERIAL $idMat");
           print("NOMBRE MATERIAL $nomMat");
           print("OTRO MATERIAL $otro");
-          print("CANTIDAD MATERIAL $valorCanMate");
+          print("CANTIDAD MATERIAL $cantM");
           print("ID OBRA $idObra");
           print("NOMBRE OBRA $nomObra");
           print("OTRO MANO DE OBRA $otroO");
-          print("CANTIDAD MANO OBRA $valorCanObra");
+          print("CANTIDAD MANO OBRA $cantO");
           print("FOTO $foto");
           print("ID TIENDA $idTiend");
 
           DatabaseHelper.insertarReporte(
-            id,
+            idUnico,
             selectedFormato,
             valorDepartamento,
             valorUbicacion,
@@ -313,6 +307,9 @@ class _MyFormState extends State<MyForm> {
   }
 
   void _preguardarDatos() {
+    setState(() {
+      isGuardarHabilitado = true;
+    });
     if (formKey.currentState!.validate()) {
       // Obtener los datos ingresados por el usuario
       String valorDepartamento = _departamentoController.text;
@@ -325,8 +322,6 @@ class _MyFormState extends State<MyForm> {
       String otro = _otroMPController.text;
       String otroO = _otroObraController.text;
       String foto = "HJHFDVJDHVBJHFVB";
-
-      if (valorCanMate.isNotEmpty && valorCanObra.isNotEmpty) {}
 
       // Agregar los datos a la lista
       datosIngresados.add({
@@ -379,6 +374,9 @@ class _MyFormState extends State<MyForm> {
     List<Map<String, dynamic>> resultadosP = [];
     List<Map<String, dynamic>> resultadosM = [];
     List<Map<String, dynamic>> resultadosO = [];
+    final authService = Provider.of<AuthService>(context, listen: false);
+    String? nomUsuario = authService.currentUser;
+    print("usuariooo $nomUsuario");
 
     return Scaffold(
       body: Padding(
@@ -634,6 +632,7 @@ class _MyFormState extends State<MyForm> {
                   },
                 ),
                 TextFormField(
+                  keyboardType: TextInputType.number,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: _cantmatController,
                   decoration:
@@ -777,6 +776,7 @@ class _MyFormState extends State<MyForm> {
                   },
                 ),
                 TextFormField(
+                  keyboardType: TextInputType.number,
                   focusNode: _cantidadFocus,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: _cantobraController,
@@ -943,9 +943,11 @@ class _MyFormState extends State<MyForm> {
                   ),
                 ),
                 ElevatedButton(
-                  onPressed: () {
-                    guardarDatosConConfirmacion(context);
-                  },
+                  onPressed: isGuardarHabilitado
+                      ? () {
+                          guardarDatosConConfirmacion(context);
+                        }
+                      : null, // Desactiva el botón si isGuardarHabilitado es falso
                   key: null,
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Colors.white,

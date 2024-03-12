@@ -1,5 +1,5 @@
+import 'package:flutter/foundation.dart';
 import 'package:postgres/postgres.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 enum AuthState { authenticated, unauthenticated }
@@ -32,18 +32,24 @@ class AuthService extends ChangeNotifier {
       );
 
       await connection.open();
-      print('BASE CONECTADA');
+      if (kDebugMode) {
+        print('BASE CONECTADA');
+      }
       return connection;
     } catch (e) {
-      print('Error al abrir la conexión: $e');
-      throw e;
+      if (kDebugMode) {
+        print('Error al abrir la conexión: $e');
+      }
+      rethrow;
     }
   }
 
   Future<void> closeConnection() async {
     final connection = await openConnection();
     await connection.close();
-    print('Conexión a PostgreSQL cerrada');
+    if (kDebugMode) {
+      print('Conexión a PostgreSQL cerrada');
+    }
   }
 
   // Método para establecer el nombre de usuario actual
@@ -63,12 +69,11 @@ class AuthService extends ChangeNotifier {
             'email': email,
             'contrasena': contrasena
           });
-      print('Usuario registrado: $name');
-      print('Usuario registrado: $email');
-      print('Usuario registrado: $contrasena');
       return null;
     } catch (e) {
-      print('Error al registrar usuario: $e');
+      if (kDebugMode) {
+        print('Error al registrar usuario: $e');
+      }
       return e.toString();
     }
   }
@@ -92,7 +97,9 @@ class AuthService extends ChangeNotifier {
         return 'Credenciales incorrectas';
       }
     } catch (e) {
-      print('Error al iniciar sesión: $e');
+      if (kDebugMode) {
+        print('Error al iniciar sesión: $e');
+      }
       return e.toString();
     }
   }
@@ -101,7 +108,9 @@ class AuthService extends ChangeNotifier {
     await storage.delete(key: 'token');
     _authState = AuthState.unauthenticated;
     notifyListeners();
-    print('Usuario desconectado');
+    if (kDebugMode) {
+      print('Usuario desconectado');
+    }
   }
 
   Future<String?> readToken() async {

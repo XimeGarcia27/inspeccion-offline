@@ -3,4 +3,3 @@ export 'package:app_inspections/src/pages/inspeccion_tienda.dart';
 export 'package:app_inspections/src/pages/login_screen.dart';
 export 'package:app_inspections/src/pages/registro_screen.dart';
 export 'package:app_inspections/src/pages/splash_screen.dart';
-export 'package:app_inspections/src/screens/check_auth_screen.dart';

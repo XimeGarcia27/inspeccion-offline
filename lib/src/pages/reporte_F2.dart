@@ -19,6 +19,7 @@ class ReporteF2Screen extends StatelessWidget {
   void _descargarPDF(BuildContext context) async {
     // Obtener los datos del informe
     List<Map<String, dynamic>> datos = await _cargarReporte(idTienda);
+    print("DATOS DE REPORTEE $datos");
 
     // Generar el PDF
     File pdfFile = await generatePDF(datos);
@@ -46,7 +47,7 @@ class ReporteF2Screen extends StatelessWidget {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.download),
+            icon: const Icon(Icons.download, color: Colors.white),
             onPressed: () {
               _descargarPDF(context);
             },

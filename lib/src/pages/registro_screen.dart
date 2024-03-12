@@ -17,7 +17,7 @@ class RegistroScreen extends StatelessWidget {
               const SizedBox(height: 280), //para mover el widget
               Padding(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 20), // Agregar márgenes horizontales
+                    horizontal: 10), // Agregar márgenes horizontales
                 child: SizedBox(
                   height: 700,
                   child: CardContainer(
@@ -74,7 +74,6 @@ class _LoginForm extends StatelessWidget {
 
     return Form(
       key: loginForm.formkey,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
       child: Column(
         children: [
           const SizedBox(height: 30), //separar renglones
@@ -82,6 +81,7 @@ class _LoginForm extends StatelessWidget {
           TextFormField(
             // Configuraciones del cuadro de texto
             autocorrect: false,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
             keyboardType: TextInputType.emailAddress,
             onChanged: (value) => loginForm.name = value,
             validator: (value) {
@@ -115,6 +115,7 @@ class _LoginForm extends StatelessWidget {
 
           TextFormField(
             // Configuraciones del cuadro de texto
+            autovalidateMode: AutovalidateMode.onUserInteraction,
             autocorrect: false,
             keyboardType: TextInputType.emailAddress,
             onChanged: (value) => loginForm.usuario = value,
@@ -149,6 +150,7 @@ class _LoginForm extends StatelessWidget {
 
           TextFormField(
             // Configuraciones del cuadro de texto
+            autovalidateMode: AutovalidateMode.onUserInteraction,
             autocorrect: false,
             keyboardType: TextInputType.emailAddress,
             obscureText: true, //para ocultar la contraseña
@@ -162,7 +164,7 @@ class _LoginForm extends StatelessWidget {
             decoration: InputDecoration(
               hintText: '***********',
               labelText: 'Contraseña',
-              prefixIcon: Icon(Icons.lock_outlined),
+              prefixIcon: const Icon(Icons.lock_outlined),
               // Cambiar el color del borde del cuadro de texto
               enabledBorder: OutlineInputBorder(
                 borderSide: const BorderSide(
@@ -189,12 +191,6 @@ class _LoginForm extends StatelessWidget {
               disabledColor: Colors.grey,
               elevation: 0,
               color: const Color.fromRGBO(6, 6, 68, 1),
-              child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 80, vertical: 15),
-                  child: Text(
-                    loginForm.isLoading ? 'Espere' : 'Ingresar',
-                    style: TextStyle(color: Colors.white),
-                  )),
               onPressed: loginForm.isLoading
                   ? null
                   : () async {
@@ -218,7 +214,14 @@ class _LoginForm extends StatelessWidget {
                         print(errorMessage);
                         loginForm.isLoading = false;
                       }
-                    })
+                    },
+              child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 80, vertical: 15),
+                  child: Text(
+                    loginForm.isLoading ? 'Espere' : 'Ingresar',
+                    style: const TextStyle(color: Colors.white),
+                  )))
         ],
       ),
     );

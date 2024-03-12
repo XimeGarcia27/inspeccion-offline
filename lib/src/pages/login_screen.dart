@@ -73,7 +73,6 @@ class _LoginForm extends StatelessWidget {
 
     return Form(
       key: loginForm.formkey,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
       child: Column(
         children: [
           const SizedBox(height: 30), // Separar renglones

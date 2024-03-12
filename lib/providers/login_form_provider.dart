@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class LoginFormProvider extends ChangeNotifier {
@@ -17,9 +18,13 @@ class LoginFormProvider extends ChangeNotifier {
   }
 
   bool isValidForm() {
-    print(formkey.currentState?.validate());
+    if (kDebugMode) {
+      print(formkey.currentState?.validate());
+    }
 
-    print('$usuario - $password');
+    if (kDebugMode) {
+      print('$usuario - $password');
+    }
 
     //para ver si es formulario es valido
     return formkey.currentState?.validate() ?? false;

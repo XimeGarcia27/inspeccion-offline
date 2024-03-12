@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:app_inspections/services/auth_service.dart';
 import 'package:app_inspections/services/db.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -99,6 +100,7 @@ class _EditMyFormState extends State<EditMyForm> {
   final int idTienda;
   String idTien = '';
   String nombreTienda = '';
+  @override
   final BuildContext context;
   bool _isLoading = true;
 
@@ -197,11 +199,15 @@ class _EditMyFormState extends State<EditMyForm> {
         // Usa los datos como necesites
       } else {
         // Manejo si no se encontró el defecto
-        print("NO HAY DATOS");
+        if (kDebugMode) {
+          print("NO HAY DATOS");
+        }
       }
     } catch (error) {
       // Maneja cualquier error que ocurra durante la ejecución
-      print('Error en editarDefecto: $error');
+      if (kDebugMode) {
+        print('Error en editarDefecto: $error');
+      }
     }
   }
 
@@ -218,11 +224,15 @@ class _EditMyFormState extends State<EditMyForm> {
         // Usa los datos como necesites
       } else {
         // Manejo si no se encontró el defecto
-        print("NO HAY DATOS");
+        if (kDebugMode) {
+          print("NO HAY DATOS");
+        }
       }
     } catch (error) {
       // Maneja cualquier error que ocurra durante la ejecución
-      print('Error en editarDefecto: $error');
+      if (kDebugMode) {
+        print('Error en editarDefecto: $error');
+      }
     }
   }
 
@@ -239,11 +249,15 @@ class _EditMyFormState extends State<EditMyForm> {
         // Usa los datos como necesites
       } else {
         // Manejo si no se encontró el defecto
-        print("NO HAY DATOS");
+        if (kDebugMode) {
+          print("NO HAY DATOS");
+        }
       }
     } catch (error) {
       // Maneja cualquier error que ocurra durante la ejecución
-      print('Error en editarDefecto: $error');
+      if (kDebugMode) {
+        print('Error en editarDefecto: $error');
+      }
     }
   }
 
@@ -261,7 +275,7 @@ class _EditMyFormState extends State<EditMyForm> {
       });
 
       // Inicia un temporizador para ocultar el indicador de carga después de un tiempo determinado
-      Timer(Duration(seconds: 1), () {
+      Timer(const Duration(seconds: 1), () {
         setState(() {
           _isLoading = false;
         });
@@ -281,8 +295,9 @@ class _EditMyFormState extends State<EditMyForm> {
       isMaterialSelected = true;
       //_idmatController.text = idMat.toString();
       idMat = idMaterialSeleccionado;
-      print('ID del material seleccionado: $idMat');
-      //print('ID de tienda en F1Screen: $idTiend');
+      if (kDebugMode) {
+        print('ID del material seleccionado: $idMat');
+      }
     });
   }
 
