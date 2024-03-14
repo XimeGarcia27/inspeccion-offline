@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:app_inspections/services/auth_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -167,7 +169,6 @@ class DatabaseHelper {
   }
 
   static Future<void> insertarReporte(
-      String idUnico,
       String formato,
       String valorDepartamento,
       String valorUbicacion,
@@ -181,10 +182,12 @@ class DatabaseHelper {
       String nomObr,
       String otroObr,
       int cantO,
-      String foto,
+      List<String?> foto,
+      String datoUnico,
       int idTiend) async {
     final connection = await _getConnection();
     try {
+      String urlsString = foto.join(','); // Unir las URLs con comas
       // Validación de parámetros
       if (valorDepartamento.isEmpty ||
           valorUbicacion.isEmpty ||
@@ -197,10 +200,9 @@ class DatabaseHelper {
 
       // Realizar la inserción en la base de datos utilizando una sentencia preparada
       await connection.query(
-        'INSERT INTO reporte (id_rep, formato, nom_dep, clave_ubi, id_probl, nom_probl, id_mat, nom_mat, otro, cant_mat, id_obr, nom_obr, otro_obr, cant_obr, foto, id_tienda)'
-        'VALUES (@idUnico, @formato, @valorDepartamento, @valorUbicacion, @idProbl, @nomProbl, @idMat, @nomMat, @otro, @cantM, @idObra, @nomObr, @otroObr, @cantO, @foto, @idTiend)',
+        'INSERT INTO reporte (formato, nom_dep, clave_ubi, id_probl, nom_probl, id_mat, nom_mat, otro, cant_mat, id_obr, nom_obr, otro_obr, cant_obr, foto, dato_unico, id_tienda)'
+        'VALUES (@formato, @valorDepartamento, @valorUbicacion, @idProbl, @nomProbl, @idMat, @nomMat, @otro, @cantM, @idObra, @nomObr, @otroObr, @cantO, (ARRAY[$urlsString]), @datoUnico, @idTiend)',
         substitutionValues: {
-          'idUnico': idUnico,
           'formato': formato,
           'valorDepartamento': valorDepartamento,
           'valorUbicacion': valorUbicacion,
@@ -214,10 +216,27 @@ class DatabaseHelper {
           'nomObr': nomObr,
           'otroObr': otroObr,
           'cantO': cantO,
-          'foto': foto,
+          'foto': urlsString,
+          'datoUnico': datoUnico,
           'idTiend': idTiend,
         },
       );
+      // Recuperar el ID del reporte insertado
+      /* final result =
+          await connection.query('SELECT currval(\'reporte_id_rep_seq\')');
+      final idReporte = result[0][0] as int;
+
+      // Insertar las imágenes con el ID del reporte
+      for (var url in foto) {
+        await connection.query(
+          'INSERT INTO images (url_img,   dato_unico, id_reporte) VALUES (@url, @datoUnico, @idReporte)',
+          substitutionValues: {
+            'url': url,
+            'datoUnico': datoUnico,
+            'idReporte': idReporte,
+          },
+        );
+      } */
       if (kDebugMode) {
         print("CONSULTA INSERTADA CORRECTAMENTE");
       }
@@ -483,6 +502,39 @@ class DatabaseHelper {
           print('Error al cerrar la conexión: $e');
         }
       }
+    }
+  }
+
+  static Future<void> insertarFoto(
+    int idReporte,
+    String foto,
+  ) async {
+    final connection = await _getConnection();
+    try {
+      // Validación de parámetros
+      if (foto.isEmpty) {
+        throw ArgumentError(
+            'Los parámetros no pueden estar vacíos o ser menores o iguales a cero.');
+      }
+
+      // Realizar la inserción en la base de datos utilizando una sentencia preparada
+      await connection.query(
+        'INSERT INTO image (foto, id_reporte)'
+        'VALUES (@foto, @idReporte)',
+        substitutionValues: {
+          'foto': foto,
+          'idReporte': idReporte,
+        },
+      );
+      if (kDebugMode) {
+        print("CONSULTA INSERTADA CORRECTAMENTE");
+      }
+    } catch (e) {
+      // Manejo de errores
+      if (kDebugMode) {
+        print('Error al insertar el reporte: $e');
+      }
+      rethrow; // Lanzar la excepción para que la maneje el código que llamó a esta función
     }
   }
 }

@@ -1,10 +1,15 @@
+import 'dart:io';
+import 'package:app_inspections/services/photo_services.dart';
+import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:app_inspections/services/auth_service.dart';
 import 'package:app_inspections/services/db.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:app_inspections/services/functions.dart';
+import 'package:photo_view/photo_view.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 // ignore: depend_on_referenced_packages
 import 'package:uuid/uuid.dart';
 
@@ -49,6 +54,8 @@ class _MyFormState extends State<MyForm> {
   final BuildContext context;
   //bool _isButtonDisabled = true;
   List<Map<String, dynamic>> datosIngresados = [];
+  List<XFile> images = [];
+  int maxPhotos = 6;
 
   //campos de la base de datos
   final TextEditingController _departamentoController = TextEditingController();
@@ -113,7 +120,6 @@ class _MyFormState extends State<MyForm> {
   final ImagePicker _picker = ImagePicker();
   List<String> imagePaths =
       []; // Lista para almacenar las rutas de las imágenes
-  XFile? _image;
 
   final TextEditingController _textEditingControllerProblema =
       TextEditingController();
@@ -135,16 +141,81 @@ class _MyFormState extends State<MyForm> {
   List<String> opcionesObra = [];
   List<String> filteredOptionsObra = [];
   bool isObraSelected = false;
+  List<String?> imageUrls = []; //se almacenan todas las imagenes
 
   // Función para abrir la cámara y seleccionar imágenes
   Future<void> _getImage() async {
+    if (images.length >= maxPhotos) {
+      // Mostrar ventana emergente cuando se excede el límite de fotos
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Límite de fotos alcanzado'),
+            content: Text('No puedes agregar más de $maxPhotos fotos.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Cerrar ventana emergente
+                },
+                child: Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+      return; // Salir del método si se alcanza el límite de fotos
+    }
+
     final XFile? image = await _picker.pickImage(source: ImageSource.camera);
-    setState(() {
-      _image = image;
-      if (_image != null) {
-        imagePaths.add(_image!.path); // Agregar la ruta de la imagen a la lista
-      }
-    });
+    if (image != null) {
+      setState(() {
+        images.add(image);
+      });
+      String? imageURL =
+          await FirebaseStorageService.uploadImage(File(image.path));
+      print("IURL DE LA IMAGEN $imageURL");
+      _guardarImagenEnBD(imageURL);
+      // Agrega la URL de la imagen a la lista de URLs
+      imageUrls.add(imageURL);
+    }
+  }
+
+  void _loadImagePaths() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String>? storedImagePaths = prefs.getStringList('imagePaths');
+    if (storedImagePaths != null) {
+      setState(() {
+        images = storedImagePaths.map((path) => XFile(path)).toList();
+        print("IMKAGEN CARGADA $images");
+      });
+    }
+  }
+
+  void deleteImageLocally(String imagePath) async {
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      List<String> imagePaths = prefs.getStringList('imagePaths') ?? [];
+
+      // Eliminar la ruta de la imagen del almacenamiento local
+      imagePaths.remove(imagePath);
+      await prefs.setStringList('imagePaths', imagePaths);
+    } catch (e) {
+      print('Error al eliminar la imagen localmente: $e');
+    }
+  }
+
+  Future<void> deleteImageFromStorage(String imageUrl) async {
+    try {
+      print(
+          'Intentando eliminar la imagen de Firebase Storage. URL: $imageUrl');
+      firebase_storage.Reference storageRef =
+          firebase_storage.FirebaseStorage.instance.refFromURL(imageUrl);
+      await storageRef.delete();
+      print('Imagen eliminada de Firebase Storage correctamente.');
+    } catch (e) {
+      print('Error al eliminar la imagen de Firebase Storage: $e');
+    }
   }
 
   void handleSelectionMaterial(
@@ -201,6 +272,8 @@ class _MyFormState extends State<MyForm> {
     return uuid.v4();
   }
 
+  String? _urlImagenSeleccionada = "";
+
   // Función para guardar datos con confirmación
   void guardarDatosConConfirmacion(BuildContext context) async {
     bool confirmacion = await mostrarDialogoConfirmacion(context);
@@ -210,6 +283,14 @@ class _MyFormState extends State<MyForm> {
     } else {
       // No hacer nada si el usuario cancela
     }
+  }
+
+  void _guardarImagenEnBD(String? imageURL) {
+    setState(() {
+      // Asigna la URL de la imagen a una variable de estado para su uso en el formulario
+      _urlImagenSeleccionada = imageURL;
+    });
+    print("URL D ELA IMAGEEEN $_urlImagenSeleccionada");
   }
 
   void _guardarDatos() {
@@ -226,8 +307,8 @@ class _MyFormState extends State<MyForm> {
         String otroO = _otroObraController.text;
         int cantM = 0;
         int cantO = 0;
-        String foto = "HJHFDVJDHVBJHFVB";
-        String idUnico = generateUniqueId();
+        List<String?> fotos = [];
+        String datoUnico = generateUniqueId();
 
         for (var datos in datosIngresados) {
           // Usar un valor predeterminado si el valor es nulo
@@ -244,7 +325,7 @@ class _MyFormState extends State<MyForm> {
           nomObra = datos['Obra'] ?? '';
           otroO = datos['Otro_Obr'] ?? 0;
           valorCanObra = datos['Cantidad_Obra'] ?? 0;
-          foto = datos['Foto'] ?? 0;
+          fotos = datos['Foto'] ?? 0;
 
           if (valorCanMate.isNotEmpty || valorCanObra.isNotEmpty) {
             cantM = int.parse(valorCanMate);
@@ -252,7 +333,6 @@ class _MyFormState extends State<MyForm> {
           }
 
           print("DATOS DEL ARREGLO");
-          print("ID UNICO $idUnico");
           print("FORMATO $selectedFormato");
           print("DEPARTAMENTO $valorDepartamento");
           print("UBICACION $valorUbicacion");
@@ -266,11 +346,11 @@ class _MyFormState extends State<MyForm> {
           print("NOMBRE OBRA $nomObra");
           print("OTRO MANO DE OBRA $otroO");
           print("CANTIDAD MANO OBRA $cantO");
-          print("FOTO $foto");
+          print("DATO UNICO PARA REFERENCIAR $datoUnico");
+          print("FOTO $fotos");
           print("ID TIENDA $idTiend");
 
           DatabaseHelper.insertarReporte(
-            idUnico,
             selectedFormato,
             valorDepartamento,
             valorUbicacion,
@@ -284,13 +364,15 @@ class _MyFormState extends State<MyForm> {
             nomObra,
             otroO,
             cantO,
-            foto,
+            fotos,
+            datoUnico,
             idTiend,
           );
         }
 
         _save();
         datosIngresados.clear();
+        images.clear();
       } catch (e) {
         // Manejo de errores
         print('Error al insertar el reporte: $e');
@@ -321,8 +403,8 @@ class _MyFormState extends State<MyForm> {
       String nomObra = _textEditingControllerObra.text;
       String otro = _otroMPController.text;
       String otroO = _otroObraController.text;
-      String foto = "HJHFDVJDHVBJHFVB";
-
+      List<String?> fotos = [];
+      fotos = imageUrls;
       // Agregar los datos a la lista
       datosIngresados.add({
         'Formato': selectedFormato,
@@ -338,7 +420,7 @@ class _MyFormState extends State<MyForm> {
         'Obra': nomObra,
         'Otro_Obr': otroO,
         'Cantidad_Obra': valorCanObra,
-        'Foto': foto,
+        'Foto': fotos,
       });
 
       // Limpiar los campos después de guardar los datos
@@ -649,6 +731,36 @@ class _MyFormState extends State<MyForm> {
                     return null;
                   },
                 ),
+                const Text('Fotos:', style: TextStyle(fontSize: 16)),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 100,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: images.length,
+                    itemBuilder: (context, index) {
+                      return _buildThumbnailWithCancel(images[index],
+                          index); // Usa la función para construir miniaturas con botón de cancelar
+                    },
+                  ),
+                ),
+                const SizedBox(
+                  height: 20,
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment
+                      .center, // Centra los elementos horizontalmente
+                  children: [
+                    Flexible(
+                      flex: 1,
+                      child: ElevatedButton.icon(
+                        onPressed: _getImage,
+                        icon: const Icon(Icons.camera),
+                        label: const Text('Tomar fotografía'),
+                      ),
+                    ),
+                  ],
+                ),
                 /* Row(
                   children: [
                     Flexible(
@@ -814,23 +926,8 @@ class _MyFormState extends State<MyForm> {
                     ),
                   ],
                 ), */
-
-                const SizedBox(
+                SizedBox(
                   height: 20,
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment
-                      .center, // Centra los elementos horizontalmente
-                  children: [
-                    Flexible(
-                      flex: 1,
-                      child: ElevatedButton.icon(
-                        onPressed: () => {},
-                        icon: const Icon(Icons.camera),
-                        label: const Text('Tomar fotografía'),
-                      ),
-                    ),
-                  ],
                 ),
                 ElevatedButton(
                   onPressed: _preguardarDatos,
@@ -859,6 +956,7 @@ class _MyFormState extends State<MyForm> {
                       DataColumn(label: Text('Cantidad Material')),
                       DataColumn(label: Text('Mano de Obra')),
                       DataColumn(label: Text('Cantidad Mano de Obra')),
+
                       // Agregar una columna adicional para los botones de acción (editar, eliminar)
                       DataColumn(label: Text('Eliminar')),
                     ],
@@ -925,6 +1023,7 @@ class _MyFormState extends State<MyForm> {
                             ),
                           ),
                         ),
+
                         // Agregar botones de acción (Editar y Eliminar)
                         DataCell(
                           Row(
@@ -966,5 +1065,128 @@ class _MyFormState extends State<MyForm> {
         ),
       ),
     );
+  }
+
+  void _mostrarFotoEnGrande(XFile image) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          // Establecer el color de fondo transparente
+          child: Stack(
+            children: [
+              PhotoView(
+                imageProvider: FileImage(File(image.path)),
+                backgroundDecoration: BoxDecoration(
+                  color: Colors
+                      .transparent, // Establece el color de fondo transparente
+                ),
+                loadingBuilder: (context, event) {
+                  if (event == null || event.expectedTotalBytes == null) {
+                    return Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                  return Center(
+                    child: CircularProgressIndicator(
+                      value: event.cumulativeBytesLoaded /
+                          event.expectedTotalBytes!,
+                    ),
+                  );
+                },
+              ),
+              Positioned(
+                top: 0,
+                right: 0,
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).pop(); // Cerrar el diálogo
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.black.withOpacity(0.5),
+                    ),
+                    child:
+                        const Icon(Icons.cancel_rounded, color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+//permitir al usuario ver la imagen en grande
+  Widget _buildThumbnailWithCancel(XFile image, int index) {
+    return GestureDetector(
+      onTap: () {
+        _mostrarFotoEnGrande(image);
+      },
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(.0),
+            child: ClipRect(
+              child: Align(
+                alignment: Alignment.topLeft,
+                widthFactor: 1.0,
+                heightFactor: 1.0,
+                child: Image.file(
+                  File(image.path),
+                  width: 100,
+                  height: 70,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 0,
+            right: 0,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  images.removeAt(index); // Remueve la imagen de la lista
+                });
+              },
+              child: const Icon(Icons.cancel_rounded), // Ícono para cancelar
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _eliminarFotos() async {
+    // Eliminar fotos locales
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      List<String>? imagePaths = prefs.getStringList('imagePaths') ?? [];
+
+      for (String imagePath in imagePaths) {
+        File imageFile = File(imagePath);
+        if (imageFile.existsSync()) {
+          await imageFile.delete();
+        }
+      }
+
+      // Limpiar la lista de rutas de imágenes en SharedPreferences
+      await prefs.remove('imagePaths');
+    } catch (e) {
+      print('Error al eliminar las fotos locales: $e');
+    }
+
+    // Eliminar fotos de Firebase Storage
+    try {
+      for (String imagePath in imagePaths) {
+        await deleteImageFromStorage(imagePath);
+      }
+    } catch (e) {
+      print('Error al eliminar las fotos de Firebase Storage: $e');
+    }
   }
 }

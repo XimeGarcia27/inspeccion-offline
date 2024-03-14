@@ -18,6 +18,14 @@ class ReporteF1Screen extends StatelessWidget {
     return databaseHelper.mostrarReporteF1(idTienda);
   }
 
+  Future<File> savePDFLocally(pdfWidgets.Document pdf) async {
+    final Directory directory = await getApplicationDocumentsDirectory();
+    final String filePath = '${directory.path}/reporteContratista.pdf';
+    final File file = File(filePath);
+    await file.writeAsBytes(await pdf.save());
+    return file;
+  }
+
   void _descargarPDF(BuildContext context) async {
     // Obtener los datos del informe
     List<Map<String, dynamic>> datos = await _cargarReporte(idTienda);
@@ -101,22 +109,9 @@ Future<File> generatePDF(List<Map<String, dynamic>> data) async {
             pdfWidgets.Table.fromTextArray(
               context: context,
               data: [
-                [
-                  'Departamento',
-                  'Ubicación',
-                  'Problema',
-                  'Material',
-                  'Especifique (Otro)',
-                  'Cantidad',
-                  'Mano de Obra',
-                  'Especifique (Otro)',
-                  'Cantidad',
-                  'URL FOTO'
-                ],
+                ['Problema', 'URLs de imágenes'],
                 for (var row in data)
                   [
-                    row['nom_dep'].toString(),
-                    row['clave_ubi'].toString(),
                     pdfWidgets.Text(
                       row['nom_probl'].toString(),
                       style: pdfWidgets.TextStyle(
@@ -125,20 +120,24 @@ Future<File> generatePDF(List<Map<String, dynamic>> data) async {
                         color: PdfColors.black,
                       ),
                     ),
-                    pdfWidgets.Text(
-                      row['nom_mat'].toString(),
-                      style: pdfWidgets.TextStyle(
-                        font: customFont, // Usa la fuente personalizada aquí
-                        fontSize: 12,
-                        color: PdfColors.black,
-                      ),
+                    pdfWidgets.Column(
+                      crossAxisAlignment: pdfWidgets.CrossAxisAlignment.start,
+                      children: [
+                        for (var url in row['foto'])
+                          pdfWidgets.Link(
+                            destination: url,
+                            child: pdfWidgets.Text(
+                              'Ver imagen',
+                              style: pdfWidgets.TextStyle(
+                                font: customFont,
+                                fontSize: 12,
+                                color: PdfColors.blue,
+                                decoration: pdfWidgets.TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                    row['otro'].toString(),
-                    row['cant_mat'].toString(),
-                    row['nom_obr'].toString(),
-                    row['otro_obr'].toString(),
-                    row['cant_obr'].toString(),
-                    row['foto'].toString(),
                   ]
               ],
               border: null, // Elimina el borde de la tabla
@@ -180,6 +179,7 @@ Future<File> generatePDF(List<Map<String, dynamic>> data) async {
   final Directory directory = await getApplicationDocumentsDirectory();
   final String filePath = '${directory.path}/reporteContratista.pdf';
   final File file = File(filePath);
+
   await file.writeAsBytes(await pdf.save());
 
   return file;
