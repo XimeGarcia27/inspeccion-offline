@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
 import 'package:pdf/pdf.dart';
+// ignore: library_prefixes
 import 'package:pdf/widgets.dart' as pdfWidgets;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:flutter/services.dart' show ByteData, Uint8List, rootBundle;
+import 'package:url_launcher/url_launcher.dart'; // Importa la biblioteca url_launcher
 
 class ReporteF1Screen extends StatelessWidget {
   final int idTienda;
@@ -80,7 +81,7 @@ class ReporteF1Widget extends StatefulWidget {
   State<ReporteF1Widget> createState() => _ReporteWidgetState();
 }
 
-Future<File> generatePDF(List<Map<String, dynamic>> data) async {
+/* Future<File> generatePDF(List<Map<String, dynamic>> data) async {
   final pdfWidgets.Font customFont = pdfWidgets.Font.ttf(
     await rootBundle.load('assets/fonts/OpenSans-Italic.ttf'),
   );
@@ -183,6 +184,111 @@ Future<File> generatePDF(List<Map<String, dynamic>> data) async {
   await file.writeAsBytes(await pdf.save());
 
   return file;
+} */
+
+Future<File> generatePDF(List<Map<String, dynamic>> data) async {
+  final pdfWidgets.Font customFont = pdfWidgets.Font.ttf(
+    await rootBundle.load('assets/fonts/OpenSans-Italic.ttf'),
+  );
+  final pdf = pdfWidgets.Document();
+
+  // Dentro de tu código de generación de PDF
+  pdf.addPage(
+    pdfWidgets.Page(
+      orientation: pdfWidgets.PageOrientation.landscape,
+      build: (context) {
+        return pdfWidgets.Stack(
+          children: [
+            pdfWidgets.Text(
+              "Reporte de Contrastista",
+              style: pdfWidgets.TextStyle(
+                font: customFont,
+                fontSize: 20,
+                fontWeight: pdfWidgets.FontWeight.bold,
+                color: PdfColors.blueGrey500,
+              ),
+            ),
+            pdfWidgets.SizedBox(height: 30),
+            pdfWidgets.Table.fromTextArray(
+              context: context,
+              data: [
+                ['Departamento', 'Ubicación', 'Problema', 'URL FOTO'],
+                for (var row in data)
+                  [
+                    row['nom_dep'].toString(),
+                    row['clave_ubi'].toString(),
+                    pdfWidgets.Text(
+                      row['nom_probl'].toString(),
+                      style: pdfWidgets.TextStyle(
+                        font: customFont,
+                        fontSize: 12,
+                        color: PdfColors.black,
+                      ),
+                    ),
+                    pdfWidgets.Column(
+                      crossAxisAlignment: pdfWidgets.CrossAxisAlignment.start,
+                      children: [
+                        for (var url in row['foto'])
+                          pdfWidgets.Row(
+                            children: [
+                              pdfWidgets.Link(
+                                destination: url,
+                                child: pdfWidgets.Text(
+                                  'Ver imagen',
+                                  style: pdfWidgets.TextStyle(
+                                    font: customFont,
+                                    fontSize: 12,
+                                    color: PdfColors.blue,
+                                    decoration:
+                                        pdfWidgets.TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                              pdfWidgets.SizedBox(
+                                  width:
+                                      10), // Ajusta el espacio entre el enlace y la URL directa
+                              pdfWidgets.Text(
+                                url,
+                                style: pdfWidgets.TextStyle(
+                                  font: customFont,
+                                  fontSize: 12,
+                                  color: PdfColors
+                                      .black, // Cambia el color de la URL directa según sea necesario
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
+                  ]
+              ],
+              border: null,
+              cellAlignment: pdfWidgets.Alignment.center,
+              cellStyle: const pdfWidgets.TextStyle(
+                fontSize: 12,
+                color: PdfColors.black,
+              ),
+              headerStyle: pdfWidgets.TextStyle(
+                fontWeight: pdfWidgets.FontWeight.bold,
+                color: PdfColors.black,
+              ),
+              headerDecoration: const pdfWidgets.BoxDecoration(
+                color: PdfColors.grey200,
+              ),
+            ),
+          ],
+        );
+      },
+    ),
+  );
+
+  // Guarda el PDF en un archivo
+  final Directory directory = await getApplicationDocumentsDirectory();
+  final String filePath = '${directory.path}/reporteContratista.pdf';
+  final File file = File(filePath);
+  await file.writeAsBytes(await pdf.save());
+
+  return file;
 }
 
 Future<Uint8List> _loadImageData(String imagePath) async {
@@ -192,6 +298,7 @@ Future<Uint8List> _loadImageData(String imagePath) async {
 
 class _ReporteWidgetState extends State<ReporteF1Widget> {
   late Future<List<Map<String, dynamic>>> _futureReporte;
+  String datounico = "";
 
   @override
   void initState() {
@@ -280,6 +387,7 @@ class _ReporteWidgetState extends State<ReporteF1Widget> {
                     )),
                   ],
                   rows: datos.map((dato) {
+                    datounico = dato['dato_unico'];
                     return DataRow(
                       cells: [
                         DataCell(
@@ -335,7 +443,25 @@ class _ReporteWidgetState extends State<ReporteF1Widget> {
                         DataCell(
                           Container(
                             padding: const EdgeInsets.all(3),
-                            child: Text('${dato['foto']}'),
+                            child: Row(
+                              children: dato['foto'].map<Widget>((url) {
+                                return Padding(
+                                  padding: const EdgeInsets.all(4),
+                                  child: InkWell(
+                                    onTap: () {
+                                      // Abrir la URL de la imagen en tamaño completo
+                                      launch(
+                                          url); // Abre la URL en el navegador por defecto del dispositivo
+                                    },
+                                    child: Image.network(
+                                      url,
+                                      width: 60, // Ancho deseado de la imagen
+                                      height: 60, // Alto deseado de la imagen
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
                           ),
                         ),
                       ],

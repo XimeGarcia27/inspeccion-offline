@@ -370,6 +370,8 @@ class _MyFormState extends State<MyForm> {
           );
         }
 
+        DatabaseHelper.insertarImagenes(fotos, datoUnico, idTiend);
+
         _save();
         datosIngresados.clear();
         images.clear();

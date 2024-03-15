@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:app_inspections/services/auth_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -187,7 +185,8 @@ class DatabaseHelper {
       int idTiend) async {
     final connection = await _getConnection();
     try {
-      String urlsString = foto.join(','); // Unir las URLs con comas
+      String urlsString =
+          foto.map((url) => "'$url'").join(','); // Unir las URLs con comas
       // Validación de parámetros
       if (valorDepartamento.isEmpty ||
           valorUbicacion.isEmpty ||
@@ -221,22 +220,6 @@ class DatabaseHelper {
           'idTiend': idTiend,
         },
       );
-      // Recuperar el ID del reporte insertado
-      /* final result =
-          await connection.query('SELECT currval(\'reporte_id_rep_seq\')');
-      final idReporte = result[0][0] as int;
-
-      // Insertar las imágenes con el ID del reporte
-      for (var url in foto) {
-        await connection.query(
-          'INSERT INTO images (url_img,   dato_unico, id_reporte) VALUES (@url, @datoUnico, @idReporte)',
-          substitutionValues: {
-            'url': url,
-            'datoUnico': datoUnico,
-            'idReporte': idReporte,
-          },
-        );
-      } */
       if (kDebugMode) {
         print("CONSULTA INSERTADA CORRECTAMENTE");
       }
@@ -289,6 +272,7 @@ class DatabaseHelper {
       final List<Map<String, dynamic>> mappedResults = results
           .map((row) => Map<String, dynamic>.from(row.toColumnMap()))
           .toList();
+      print(results);
       return mappedResults;
     } catch (e) {
       const Text('Comprueba tu conexión a intrnet');
@@ -505,36 +489,30 @@ class DatabaseHelper {
     }
   }
 
-  static Future<void> insertarFoto(
-    int idReporte,
-    String foto,
-  ) async {
+  static Future<void> insertarImagenes(
+      List<String?> fotos, String datoUnico, int idTienda) async {
     final connection = await _getConnection();
-    try {
-      // Validación de parámetros
-      if (foto.isEmpty) {
-        throw ArgumentError(
-            'Los parámetros no pueden estar vacíos o ser menores o iguales a cero.');
-      }
 
-      // Realizar la inserción en la base de datos utilizando una sentencia preparada
-      await connection.query(
-        'INSERT INTO image (foto, id_reporte)'
-        'VALUES (@foto, @idReporte)',
-        substitutionValues: {
-          'foto': foto,
-          'idReporte': idReporte,
-        },
-      );
+    try {
+      for (var foto in fotos) {
+        await connection.query(
+          'INSERT INTO images (url_img, dato_unico, id_tienda) VALUES (@url, @datoUnico, @idTienda)',
+          substitutionValues: {
+            'url': foto,
+            'datoUnico': datoUnico,
+            'idTienda': idTienda,
+          },
+        );
+      }
       if (kDebugMode) {
-        print("CONSULTA INSERTADA CORRECTAMENTE");
+        print("Imágenes insertadas correctamente");
       }
     } catch (e) {
       // Manejo de errores
       if (kDebugMode) {
-        print('Error al insertar el reporte: $e');
+        print('Error al insertar imágenes: $e');
       }
-      rethrow; // Lanzar la excepción para que la maneje el código que llamó a esta función
+      rethrow;
     }
   }
 }

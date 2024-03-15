@@ -1,5 +1,6 @@
 import 'package:app_inspections/services/db.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:io';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pdfWidgets;
@@ -69,57 +70,104 @@ class ReporteF2Widget extends StatefulWidget {
 }
 
 Future<File> generatePDF(List<Map<String, dynamic>> data) async {
+  final pdfWidgets.Font customFont = pdfWidgets.Font.ttf(
+    await rootBundle.load('assets/fonts/OpenSans-Italic.ttf'),
+  );
   final pdf = pdfWidgets.Document();
 
   pdf.addPage(
     pdfWidgets.Page(
       orientation: pdfWidgets.PageOrientation.landscape,
       build: (context) {
-        // ignore: deprecated_member_use
-        return pdfWidgets.Table.fromTextArray(
-          data: data.map((row) {
-            return [
-              row['nom_dep'],
-              row['clave_ubi'],
-              row['nom_probl'].toString(),
-              row['nom_mat']..toString(),
-              row['otro'],
-              row['cant_mat'],
-              row['nom_obr'].toString(),
-              row['otro_obr'],
-              row['cant_obr'],
-              row['foto'],
-            ];
-          }).toList(),
-          headerStyle: pdfWidgets.TextStyle(
-            fontWeight: pdfWidgets.FontWeight.bold,
-            color: PdfColors.black, // Color del texto del encabezado
-          ),
-          cellStyle: const pdfWidgets.TextStyle(),
-          headers: [
-            'Departamento',
-            'Ubicación',
-            'Problema',
-            'Material',
-            'Especifique (Otro)',
-            'Cantidad',
-            'Mano de Obra',
-            'Especifique (Otro)',
-            'Cantidad',
-            'URL FOTO',
+        return pdfWidgets.Stack(
+          children: [
+            pdfWidgets.Text(
+              "Reporte de Tienda",
+              style: pdfWidgets.TextStyle(
+                font: customFont,
+                fontSize: 20,
+                fontWeight: pdfWidgets.FontWeight.bold,
+                color: PdfColors.blueGrey500,
+              ),
+            ),
+            pdfWidgets.SizedBox(height: 30),
+            // ignore: deprecated_member_use
+            pdfWidgets.Table.fromTextArray(
+              context: context,
+              data: [
+                [
+                  'Departamento',
+                  'Ubicación',
+                  'Problema',
+                  'Material',
+                  'Especifique (Otro)',
+                  'Cantidad',
+                  'Mano de Obra',
+                  'Especifique (Otro)',
+                  'Cantidad',
+                  'URL FOTO'
+                ],
+                for (var row in data)
+                  [
+                    row['nom_dep'].toString(),
+                    row['clave_ubi'].toString(),
+                    pdfWidgets.Text(
+                      row['nom_probl'].toString(),
+                      style: pdfWidgets.TextStyle(
+                        font: customFont, // Usa la fuente personalizada aquí
+                        fontSize: 12,
+                        color: PdfColors.black,
+                      ),
+                    ),
+                    pdfWidgets.Text(
+                      row['nom_mat'].toString(),
+                      style: pdfWidgets.TextStyle(
+                        font: customFont, // Usa la fuente personalizada aquí
+                        fontSize: 12,
+                        color: PdfColors.black,
+                      ),
+                    ),
+                    row['otro'].toString(),
+                    row['cant_mat'].toString(),
+                    row['nom_obr'].toString(),
+                    row['otro_obr'].toString(),
+                    row['cant_obr'].toString(),
+                    pdfWidgets.Column(
+                      crossAxisAlignment: pdfWidgets.CrossAxisAlignment.start,
+                      children: [
+                        for (var url in row['foto'])
+                          pdfWidgets.Link(
+                            destination: url,
+                            child: pdfWidgets.Text(
+                              'Ver imagen',
+                              style: pdfWidgets.TextStyle(
+                                font: customFont,
+                                fontSize: 12,
+                                color: PdfColors.blue,
+                                decoration: pdfWidgets.TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ]
+              ],
+              border: null, // Elimina el borde de la tabla
+              cellAlignment: pdfWidgets.Alignment.center,
+              cellStyle: const pdfWidgets.TextStyle(
+                fontSize: 12,
+                color: PdfColors.black,
+              ),
+              headerStyle: pdfWidgets.TextStyle(
+                fontWeight: pdfWidgets.FontWeight.bold,
+                color: PdfColors.black,
+              ),
+              headerDecoration: const pdfWidgets.BoxDecoration(
+                color: PdfColors
+                    .grey200, // Cambia el color de fondo del encabezado
+              ),
+            ),
           ],
-          columnWidths: {
-            0: const pdfWidgets.FlexColumnWidth(1), // Departamento
-            1: const pdfWidgets.FlexColumnWidth(1), // Ubicación
-            2: const pdfWidgets.FlexColumnWidth(3), // Problema
-            3: const pdfWidgets.FlexColumnWidth(2), // Material
-            4: const pdfWidgets.FlexColumnWidth(2), // Otro
-            5: const pdfWidgets.FlexColumnWidth(1), // Cantidad
-            6: const pdfWidgets.FlexColumnWidth(2), // Mano de Obra
-            7: const pdfWidgets.FlexColumnWidth(2), // Otro
-            8: const pdfWidgets.FlexColumnWidth(1), // Cantidad
-            9: const pdfWidgets.FlexColumnWidth(2), // URL FOTO
-          },
         );
       },
     ),
