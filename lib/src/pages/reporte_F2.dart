@@ -50,7 +50,7 @@ class ReporteF2Screen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.download, color: Colors.white),
             onPressed: () {
-              _descargarPDF(context);
+              //_descargarPDF(context);
             },
           ),
         ],

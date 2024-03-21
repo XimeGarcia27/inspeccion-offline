@@ -82,14 +82,13 @@ class AuthService extends ChangeNotifier {
     try {
       final connection = await openConnection();
       final result = await connection.query(
-          'SELECT email FROM usuarios WHERE email = @email AND password = @contrasena',
-          substitutionValues: {'email': email, 'contrasena': contrasena});
+        'SELECT nombre FROM usuarios WHERE email = @email AND password = @contrasena',
+        substitutionValues: {'email': email, 'contrasena': contrasena},
+      );
       if (result.isNotEmpty) {
-        // Obtiene el nombre de usuario del resultado de la consulta
-        final nombreUsuario = result[0][0] as String;
-
-        // Establece el nombre de usuario en el servicio de autenticación
-        setCurrentUser(nombreUsuario);
+        final nombreCompleto = result[0][0] as String;
+        setCurrentUser(
+            nombreCompleto); // Establecer el nombre completo del usuario
         _authState = AuthState.authenticated;
         notifyListeners();
         return null;

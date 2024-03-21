@@ -7,7 +7,6 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pdfWidgets;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart'; // Importa la biblioteca url_launcher
 
 class ReporteF1Screen extends StatelessWidget {
   final int idTienda;
@@ -60,7 +59,7 @@ class ReporteF1Screen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.download, color: Colors.white),
             onPressed: () {
-              _descargarPDF(context);
+              //_descargarPDF(context);
             },
           ),
         ],
@@ -194,10 +193,10 @@ Future<File> generatePDF(List<Map<String, dynamic>> data) async {
 
   // Dentro de tu código de generación de PDF
   pdf.addPage(
-    pdfWidgets.Page(
+    pdfWidgets.MultiPage(
       orientation: pdfWidgets.PageOrientation.landscape,
-      build: (context) {
-        return pdfWidgets.Stack(
+      build: (context) => [
+        pdfWidgets.Stack(
           children: [
             pdfWidgets.Text(
               "Reporte de Contrastista",
@@ -209,6 +208,7 @@ Future<File> generatePDF(List<Map<String, dynamic>> data) async {
               ),
             ),
             pdfWidgets.SizedBox(height: 30),
+            // ignore: deprecated_member_use
             pdfWidgets.Table.fromTextArray(
               context: context,
               data: [
@@ -229,34 +229,17 @@ Future<File> generatePDF(List<Map<String, dynamic>> data) async {
                       crossAxisAlignment: pdfWidgets.CrossAxisAlignment.start,
                       children: [
                         for (var url in row['foto'])
-                          pdfWidgets.Row(
-                            children: [
-                              pdfWidgets.Link(
-                                destination: url,
-                                child: pdfWidgets.Text(
-                                  'Ver imagen',
-                                  style: pdfWidgets.TextStyle(
-                                    font: customFont,
-                                    fontSize: 12,
-                                    color: PdfColors.blue,
-                                    decoration:
-                                        pdfWidgets.TextDecoration.underline,
-                                  ),
-                                ),
+                          pdfWidgets.Link(
+                            destination: url,
+                            child: pdfWidgets.Text(
+                              'Ver imagen',
+                              style: pdfWidgets.TextStyle(
+                                font: customFont,
+                                fontSize: 12,
+                                color: PdfColors.blue,
+                                decoration: pdfWidgets.TextDecoration.underline,
                               ),
-                              pdfWidgets.SizedBox(
-                                  width:
-                                      10), // Ajusta el espacio entre el enlace y la URL directa
-                              pdfWidgets.Text(
-                                url,
-                                style: pdfWidgets.TextStyle(
-                                  font: customFont,
-                                  fontSize: 12,
-                                  color: PdfColors
-                                      .black, // Cambia el color de la URL directa según sea necesario
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                       ],
                     ),
@@ -277,8 +260,8 @@ Future<File> generatePDF(List<Map<String, dynamic>> data) async {
               ),
             ),
           ],
-        );
-      },
+        )
+      ],
     ),
   );
 
@@ -299,6 +282,7 @@ Future<Uint8List> _loadImageData(String imagePath) async {
 class _ReporteWidgetState extends State<ReporteF1Widget> {
   late Future<List<Map<String, dynamic>>> _futureReporte;
   String datounico = "";
+  late PdfImage imagen;
 
   @override
   void initState() {
@@ -324,7 +308,7 @@ class _ReporteWidgetState extends State<ReporteF1Widget> {
             return Center(child: Text('Error: ${snapshot.error}'));
           } else {
             List<Map<String, dynamic>> datos = snapshot.data!;
-            return Column(children: [
+            return ListView(children: [
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
@@ -449,14 +433,34 @@ class _ReporteWidgetState extends State<ReporteF1Widget> {
                                   padding: const EdgeInsets.all(4),
                                   child: InkWell(
                                     onTap: () {
-                                      // Abrir la URL de la imagen en tamaño completo
-                                      launch(
-                                          url); // Abre la URL en el navegador por defecto del dispositivo
+                                      // Muestra la imagen en una vista modal o un diálogo
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          content: Image.network(
+                                            url,
+                                            errorBuilder:
+                                                (context, error, stackTrace) {
+                                              // Manejar el error y mostrar una imagen de respaldo
+                                              return Image.asset(
+                                                  'assets/no_image.png');
+                                            },
+                                            fit: BoxFit
+                                                .contain, // Ajusta la imagen al tamaño del contenedor
+                                          ),
+                                        ),
+                                      );
                                     },
                                     child: Image.network(
                                       url,
-                                      width: 60, // Ancho deseado de la imagen
-                                      height: 60, // Alto deseado de la imagen
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        // Manejar el error y mostrar una imagen de respaldo
+                                        return Image.asset(
+                                            'assets/no_image.png',
+                                            width: 70,
+                                            height: 70);
+                                      },
                                     ),
                                   ),
                                 );

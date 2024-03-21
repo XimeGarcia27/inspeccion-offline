@@ -105,6 +105,7 @@ class DatabaseHelper {
           .toList();
       return mappedResults;
     } catch (e) {
+      //mostrar alerta de error
       const Text('Comprueba tu conexión a internet');
       return [];
     } finally {
@@ -182,6 +183,7 @@ class DatabaseHelper {
       int cantO,
       List<String?> foto,
       String datoUnico,
+      String nomUser,
       int idTiend) async {
     final connection = await _getConnection();
     try {
@@ -199,8 +201,8 @@ class DatabaseHelper {
 
       // Realizar la inserción en la base de datos utilizando una sentencia preparada
       await connection.query(
-        'INSERT INTO reporte (formato, nom_dep, clave_ubi, id_probl, nom_probl, id_mat, nom_mat, otro, cant_mat, id_obr, nom_obr, otro_obr, cant_obr, foto, dato_unico, id_tienda)'
-        'VALUES (@formato, @valorDepartamento, @valorUbicacion, @idProbl, @nomProbl, @idMat, @nomMat, @otro, @cantM, @idObra, @nomObr, @otroObr, @cantO, (ARRAY[$urlsString]), @datoUnico, @idTiend)',
+        'INSERT INTO reporte (formato, nom_dep, clave_ubi, id_probl, nom_probl, id_mat, nom_mat, otro, cant_mat, id_obr, nom_obr, otro_obr, cant_obr, foto, dato_unico, nom_user, id_tienda)'
+        'VALUES (@formato, @valorDepartamento, @valorUbicacion, @idProbl, @nomProbl, @idMat, @nomMat, @otro, @cantM, @idObra, @nomObr, @otroObr, @cantO, (ARRAY[$urlsString]), @datoUnico, @nom_user, @idTiend)',
         substitutionValues: {
           'formato': formato,
           'valorDepartamento': valorDepartamento,
@@ -217,6 +219,7 @@ class DatabaseHelper {
           'cantO': cantO,
           'foto': urlsString,
           'datoUnico': datoUnico,
+          'nom_user': nomUser,
           'idTiend': idTiend,
         },
       );
@@ -328,11 +331,13 @@ class DatabaseHelper {
     String nomObr,
     String otroObr,
     int cantO,
-    String foto,
+    List<String?> foto,
     int idTiend,
   ) async {
     final connection = await _getConnection();
     try {
+      String urlsString =
+          foto.map((url) => "'$url'").join(','); // Unir las URLs con comas
       // Validación de parámetros
       if (valorDepartamento.isEmpty ||
           valorUbicacion.isEmpty ||
@@ -346,7 +351,7 @@ class DatabaseHelper {
       await connection.query(
         'UPDATE reporte SET formato = @formato, nom_dep = @valorDepartamento, clave_ubi = @valorUbicacion, '
         'id_probl = @idProbl, nom_probl = @nomProbl, id_mat = @idMat, nom_mat = nomMat, otro = otro, cant_mat = @cantM, id_obr = @idObra, nom_obr = @nomObr, otro_obr = @otroObr,'
-        'cant_obr = @cantO, foto = @foto, id_tienda = @idTiend WHERE id_rep = @idReporte',
+        'cant_obr = @cantO, (ARRAY[$urlsString]) , id_tienda = @idTiend WHERE id_rep = @idReporte',
         substitutionValues: {
           'idReporte': idReporte,
           'formato': formato,
@@ -362,7 +367,7 @@ class DatabaseHelper {
           'nomObr': nomObr,
           'otroObr': otroObr,
           'cantO': cantO,
-          'foto': foto,
+          'foto': urlsString,
           'idTiend': idTiend,
         },
       );
@@ -469,7 +474,7 @@ class DatabaseHelper {
     final connection = await _getConnection();
     try {
       final results = await connection.query(
-          "SELECT nom_mat, SUM(cant_mat) as cantidad_total FROM reporte GROUP BY nom_mat");
+          "SELECT nom_mat, SUM(cant_mat) as cantidad_total FROM reporte WHERE id_tienda = $idtienda GROUP BY nom_mat");
       final List<Map<String, dynamic>> mappedResults = results
           .map((row) => Map<String, dynamic>.from(row.toColumnMap()))
           .toList();

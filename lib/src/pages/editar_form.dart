@@ -1,10 +1,14 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:app_inspections/services/auth_service.dart';
 import 'package:app_inspections/services/db.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:photo_view/photo_view.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class EditarForm extends StatelessWidget {
   final int idTienda;
@@ -105,6 +109,7 @@ class _EditMyFormState extends State<EditMyForm> {
   bool _isLoading = true;
 
   bool _isButtonDisabled = true;
+  List<String> fotos = [];
 
   @override
   void initState() {
@@ -117,6 +122,7 @@ class _EditMyFormState extends State<EditMyForm> {
     idObra = widget.data['id_obr'];
     _cantmatController.text = widget.data['cant_mat'].toString();
     _cantobraController.text = widget.data['cant_obr'].toString();
+    fotos = widget.data['foto'] as List<String>;
     _cargarDatosAsync();
   }
 
@@ -138,8 +144,8 @@ class _EditMyFormState extends State<EditMyForm> {
   _EditMyFormState({required this.idTienda, required this.context});
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  List<String> imagePaths =
-      []; // Lista para almacenar las rutas de las imágenes
+  List<XFile> images = []; // Lista para almacenar las rutas de las imágenes
+  int maxPhotos = 6;
 
   final TextEditingController _textEditingControllerProblema =
       TextEditingController();
@@ -164,28 +170,6 @@ class _EditMyFormState extends State<EditMyForm> {
 
   final FocusNode _cantidadFocus = FocusNode();
   final FocusNode _focusOtO = FocusNode();
-
-  // Función para abrir la cámara y seleccionar imágenes
-
-  void _checkIfButtonShouldBeEnabled() {
-    final bool isDepartamento = _departamentoController.text.isNotEmpty;
-    final bool isUbicacion = _ubicacionController.text.isNotEmpty;
-    final bool isProblem = _textEditingControllerProblema.text.isNotEmpty;
-    final bool isMat = _textEditingControllerMaterial.text.isNotEmpty;
-    final bool isCantMat = _cantmatController.text.isNotEmpty;
-    final bool isObra = _textEditingControllerObra.text.isNotEmpty;
-    final bool isCantObra = _cantobraController.text.isNotEmpty;
-
-    setState(() {
-      _isButtonDisabled = !(isDepartamento &&
-          isUbicacion &&
-          isProblem &&
-          isMat &&
-          isCantMat &&
-          isObra &&
-          isCantObra);
-    });
-  }
 
   Future<void> editarDefecto() async {
     try {
@@ -267,7 +251,6 @@ class _EditMyFormState extends State<EditMyForm> {
       await editarDefecto();
       await editarMaterial();
       await editarManoObra();
-      _checkIfButtonShouldBeEnabled();
 
       // Una vez que las operaciones están completas, actualiza el estado para ocultar el indicador de carga
       setState(() {
@@ -337,11 +320,13 @@ class _EditMyFormState extends State<EditMyForm> {
       String otroO = _otroObraController.text;
       int cantM = 0;
       int cantO = 0;
-      String foto = "HJHFDVJDHVBJHFVB";
+      List<String?> fotos = [];
       idReporte = widget.data['id_rep'];
 
-      if (valorCanMate.isNotEmpty || valorCanObra.isNotEmpty) {
+      if (valorCanMate.isNotEmpty) {
         cantM = int.parse(valorCanMate);
+      }
+      if (valorCanObra.isNotEmpty) {
         cantO = int.parse(valorCanObra);
       }
 
@@ -351,7 +336,7 @@ class _EditMyFormState extends State<EditMyForm> {
       print("DATOOOSS ID MAT $idMat");
       print("DATOOOSS CANT M $cantM");
       print("DATOOOSS CANT O $cantO");
-      print("FOTO $foto");
+      print("FOTO $fotos");
       print("DATOOOSS ID TIENDA $idTiend");
       try {
         DatabaseHelper.editarReporte(
@@ -369,7 +354,7 @@ class _EditMyFormState extends State<EditMyForm> {
           nomObra,
           otroO,
           cantO,
-          foto,
+          fotos,
           idTiend,
         );
         // Muestra una alerta de "Edición terminada"
@@ -668,6 +653,62 @@ class _EditMyFormState extends State<EditMyForm> {
                   },
                 ),
                 const SizedBox(
+                  height: 20,
+                ),
+                const Text('Fotos',
+                    style: TextStyle(
+                      fontSize: 20,
+                    )),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 80,
+                  //width: 200,
+                  child: SizedBox(
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: fotos.map<Widget>((url) {
+                        return Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: InkWell(
+                            onTap: () {
+                              // Muestra la imagen en una vista modal o un diálogo
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  content: Image.network(
+                                    url,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      // Manejar el error y mostrar una imagen de respaldo
+                                      return Image.asset('assets/no_image.png');
+                                    },
+                                    fit: BoxFit
+                                        .contain, // Ajusta la imagen al tamaño del contenedor
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Image.network(
+                              url,
+                              errorBuilder: (context, error, stackTrace) {
+                                CachedNetworkImage(
+                                  imageUrl: url,
+                                  placeholder: (context, url) =>
+                                      const CircularProgressIndicator(),
+                                  errorWidget: (context, url, error) =>
+                                      const Icon(Icons.error),
+                                );
+                                // Manejar el error y mostrar una imagen de respaldo
+                                return Image.asset('assets/no_image.png',
+                                    width: 70, height: 70);
+                              },
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+                const SizedBox(
                   height: 30,
                 ),
                 const SizedBox(height: 25),
@@ -795,7 +836,7 @@ class _EditMyFormState extends State<EditMyForm> {
                 ),
                 const SizedBox(height: 25),
                 ElevatedButton(
-                  onPressed: _isButtonDisabled ? null : _editarDatos,
+                  onPressed: _editarDatos,
                   key: null,
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Colors.white,
@@ -812,6 +853,100 @@ class _EditMyFormState extends State<EditMyForm> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _mostrarFotoEnGrande(XFile image) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          // Establecer el color de fondo transparente
+          child: Stack(
+            children: [
+              PhotoView(
+                imageProvider: FileImage(File(image.path)),
+                backgroundDecoration: const BoxDecoration(
+                  color: Colors
+                      .transparent, // Establece el color de fondo transparente
+                ),
+                loadingBuilder: (context, event) {
+                  if (event == null || event.expectedTotalBytes == null) {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                  return Center(
+                    child: CircularProgressIndicator(
+                      value: event.cumulativeBytesLoaded /
+                          event.expectedTotalBytes!,
+                    ),
+                  );
+                },
+              ),
+              Positioned(
+                top: 0,
+                right: 0,
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).pop(); // Cerrar el diálogo
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.black.withOpacity(0.5),
+                    ),
+                    child:
+                        const Icon(Icons.cancel_rounded, color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  //permitir al usuario ver la imagen en grande
+  Widget _buildThumbnailWithCancel(XFile image, int index) {
+    return GestureDetector(
+      onTap: () {
+        _mostrarFotoEnGrande(image);
+      },
+      child: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(.0),
+            child: ClipRect(
+              child: Align(
+                alignment: Alignment.topLeft,
+                widthFactor: 1.0,
+                heightFactor: 1.0,
+                child: Image.file(
+                  File(image.path),
+                  width: 100,
+                  height: 70,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 0,
+            right: 0,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  images.removeAt(index); // Remueve la imagen de la lista
+                });
+              },
+              child: const Icon(Icons.cancel_rounded), // Ícono para cancelar
+            ),
+          ),
+        ],
       ),
     );
   }

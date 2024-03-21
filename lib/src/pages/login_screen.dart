@@ -178,11 +178,17 @@ class _LoginForm extends StatelessWidget {
                     if (errorMessage == null) {
                       // ignore: use_build_context_synchronously
                       Navigator.pushReplacementNamed(
-                          context, 'inicioInsp'); //navegar a otra pantalla
+                          context, 'inicioInsp'); // Navegar a otra pantalla
                     } else {
-                      //print(errorMessage);
-                      NotificationsServices.showSnackbar(
-                          "La contraseña o correo no coinciden");
+                      // Muestra un snackbar para notificar al usuario que las credenciales no son correctas
+                      const snackBar = SnackBar(
+                        content: Text('La contraseña o correo no coinciden'),
+                        backgroundColor: Color.fromARGB(255, 1, 25, 66),
+                      );
+                      // ignore: use_build_context_synchronously
+                      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+
+                      // Restaura el estado de isLoading a falso para que el botón de inicio de sesión vuelva a estar habilitado
                       loginForm.isLoading = false;
                     }
                   },
