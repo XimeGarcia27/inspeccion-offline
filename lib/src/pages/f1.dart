@@ -3,6 +3,7 @@ import 'package:app_inspections/services/photo_services.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:app_inspections/services/auth_service.dart';
 import 'package:app_inspections/services/db.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
@@ -76,6 +77,7 @@ class _MyFormState extends State<MyForm> {
   bool isGuardarHabilitado = false;
   String? nomUser = "";
   String? _urlImagenSeleccionada = "";
+  String formato = "";
 
   List<String> problemasEscritos = [];
   List<String> materialesEscritos = [];
@@ -220,15 +222,15 @@ class _MyFormState extends State<MyForm> {
     });
   }
 
-  void handleSelectionProblem(
-      String selectedOptionProblem, int idProblemaSeleccionado) {
+  void handleSelectionProblem(String selectedOptionProblem,
+      int idProblemaSeleccionado, String textoFormato) {
     setState(() {
       _textEditingControllerProblema.text = selectedOptionProblem;
-
       showListProblemas = false;
       isProblemSelected = true;
       _idproblController.text = idProbl.toString();
       idProbl = idProblemaSeleccionado;
+      formato = textoFormato;
     });
   }
 
@@ -255,7 +257,7 @@ class _MyFormState extends State<MyForm> {
       // Ejecutar la función _guardarDatos si el usuario acepta
       _guardarDatos();
     } else {
-      // No hacer nada si el usuario cancela
+      // No hacer nada si el usuario  cancela
     }
   }
 
@@ -266,6 +268,7 @@ class _MyFormState extends State<MyForm> {
     });
     print("URL D ELA IMAGEEEN $_urlImagenSeleccionada");
   }
+  //
 
   void _guardarDatos() {
     if (formKey.currentState!.validate()) {
@@ -277,10 +280,19 @@ class _MyFormState extends State<MyForm> {
         String nomObra = _textEditingControllerObra.text;
         String otro = _otroMPController.text;
         String otroO = _otroObraController.text;
+        String cantidadM = _cantmatController.text;
+        String cantidadO = _cantobraController.text;
         int cantM = 0;
         int cantO = 0;
         List<String?> fotos = [];
         String datoUnico = generateUniqueId();
+        String formatoSel = "";
+
+        if (formato.isEmpty && selectedFormato.isNotEmpty) {
+          formatoSel = selectedFormato;
+        } else if (selectedFormato.isEmpty && formato.isNotEmpty) {
+          formatoSel = formato;
+        }
 
         for (var datos in datosIngresados) {
           // Usar un valor predeterminado si el valor es nulo
@@ -291,13 +303,23 @@ class _MyFormState extends State<MyForm> {
           idMat = datos['ID_Material'] ?? 0;
           nomMat = datos['Material'] ?? '';
           otro = datos['Otro'] ?? 0;
+          cantidadM = datos['Cantidad_Material'] ?? 0;
           idObra = datos['ID_Obra'] ?? 0;
           nomObra = datos['Obra'] ?? '';
           otroO = datos['Otro_Obr'] ?? 0;
+          cantidadO = datos['Cantidad_Obra'] ?? 0;
           fotos = datos['Foto'] ?? 0;
 
+          if (cantidadM.isNotEmpty) {
+            cantM = int.parse(cantidadM);
+          }
+
+          if (cantidadO.isNotEmpty) {
+            cantO = int.parse(cantidadO);
+          }
+
           print("DATOS DEL ARREGLO");
-          print("FORMATO $selectedFormato");
+          print("FORMATO $formatoSel");
           print("DEPARTAMENTO $valorDepartamento");
           print("UBICACION $valorUbicacion");
           print("ID PROBLEMA $idProbl");
@@ -316,7 +338,7 @@ class _MyFormState extends State<MyForm> {
           print("ID TIENDA $idTiend");
 
           DatabaseHelper.insertarReporte(
-            selectedFormato,
+            formatoSel,
             valorDepartamento,
             valorUbicacion,
             idProbl,
@@ -375,7 +397,7 @@ class _MyFormState extends State<MyForm> {
       fotos = imageUrls;
       // Agregar los datos a la lista
       datosIngresados.add({
-        'Formato': selectedFormato,
+        'Formato': formato,
         'Departamento': valorDepartamento,
         'Ubicacion': valorUbicacion,
         'ID_Problema': idProbl,
@@ -396,9 +418,7 @@ class _MyFormState extends State<MyForm> {
       // Verificar que los campos no estén vacíos
       if (valorDepartamento.isEmpty) camposVacios.add('Departamento');
       if (valorUbicacion.isEmpty) camposVacios.add('Ubicación');
-      if (nomProbl.isEmpty) camposVacios.add('Problema');
       if (nomObra.isEmpty) camposVacios.add('Mano de Obra');
-      if (fotos.isEmpty) camposVacios.add('Por favor tomar fotografías');
 
       if (camposVacios.isNotEmpty) {
         // Construir el mensaje de alerta con los campos vacíos
@@ -445,6 +465,7 @@ class _MyFormState extends State<MyForm> {
       _cantobraController.clear();
       _otroMPController.clear();
       _otroObraController.clear();
+      formato = "";
       _focusNodeObr.unfocus();
     });
   }
@@ -462,6 +483,8 @@ class _MyFormState extends State<MyForm> {
     //comparar si se activa la seccion de mano de obra
     String problema = _textEditingControllerProblema.text.toLowerCase();
     bool contieneTornillo = problema.contains('tornillo');
+    //generar lista de problemas que no llevan foto para activar los demas campos
+    //en la bd el campo foto no debe ser requerido, puede ir nulo, configurarlo
     bool masDeUnaFoto = images.length > 1;
 
     bool activarCampos = contieneTornillo || masDeUnaFoto;
@@ -543,10 +566,12 @@ class _MyFormState extends State<MyForm> {
                         // Establecer como null por defecto
                         if (showListProblemas) {
                           idProbl = opcion['id_probl'];
+                          formato = opcion['formato'];
+                          //print("formato de la seleccion $formato");
                         }
-                        String textoProblema =
-                            '${opcion['nom_probl']} ${opcion['formato']}';
-                        return '$textoProblema|id:$idProbl';
+
+                        String textoProblema = '${opcion['nom_probl']}';
+                        return '$textoProblema|id:$idProbl|formato:$formato';
                       }).toList();
                     });
                   },
@@ -587,16 +612,19 @@ class _MyFormState extends State<MyForm> {
                         itemBuilder: (context, index) {
                           // Divide el texto del problema y el ID del problema
                           List<String> partes =
-                              filteredOptionsProblema[index].split('|id:');
+                              filteredOptionsProblema[index].split('|');
+                          print("PARTES DE LA SELECCIÓN $partes");
                           String textoProblema = partes[0];
-                          int idProblema = int.parse(partes[1]);
+                          int idProblema = int.parse(
+                              partes[1].substring(3)); // Para eliminar 'id:'
+                          String textoFormato = partes[2]
+                              .substring(8); // Para eliminar 'formato:'
                           return ListTile(
                             title: Text(textoProblema),
                             onTap: () {
-                              // Puedes acceder al ID del problema seleccionado aquí
                               int idProblemaSeleccionado = idProblema;
-                              handleSelectionProblem(
-                                  textoProblema, idProblemaSeleccionado);
+                              handleSelectionProblem(textoProblema,
+                                  idProblemaSeleccionado, textoFormato);
                               showListProblemas = false;
                             },
                           );
@@ -643,8 +671,7 @@ class _MyFormState extends State<MyForm> {
                           idMat = opcion['id_mat'];
                         }
                         // Retorna el texto para mostrar en la lista
-                        String textoMaterial =
-                            '${opcion['nom_mat']} ${opcion['formato']}';
+                        String textoMaterial = '${opcion['nom_mat']}';
                         return '$textoMaterial|id:$idMat';
                       }).toList();
                     });
@@ -818,8 +845,7 @@ class _MyFormState extends State<MyForm> {
                           idObra = opcion['id_obr'];
                         }
                         // Retorna el texto para mostrar en la lista
-                        String textoObra =
-                            '${opcion['nom_obr']} ${opcion['formato']}';
+                        String textoObra = '${opcion['nom_obr']}';
                         return '$textoObra|id:$idObra';
                       }).toList();
                     });
@@ -1158,7 +1184,7 @@ class _MyFormState extends State<MyForm> {
                 setState(() {
                   images.removeAt(index); // Remueve la imagen de la lista
                 });
-                _eliminarFoto(image);
+                eliminarImagenDeFirebase(image);
               },
               child: const Icon(Icons.cancel_rounded), // Ícono para cancelar
             ),
@@ -1169,24 +1195,19 @@ class _MyFormState extends State<MyForm> {
   }
 
   // Función para eliminar una foto
-  void _eliminarFoto(XFile image) async {
+  Future<void> eliminarImagenDeFirebase(XFile imageUrl) async {
     try {
-      // Eliminar la foto localmente
-      File imageFile = File(image.path);
-      if (imageFile.existsSync()) {
-        await imageFile.delete();
-      }
+      String? imageURL =
+          await FirebaseStorageService.uploadImage(File(imageUrl.path));
+      // Obtener una referencia a la imagen en Firebase Storage
+      Reference imagenRef = FirebaseStorage.instance.refFromURL(imageURL!);
 
-      // Eliminar la ruta de la imagen de las preferencias compartidas
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      List<String>? imagePaths = prefs.getStringList('imagePaths') ?? [];
-      imagePaths.remove(image.path);
-      await prefs.setStringList('imagePaths', imagePaths);
+      // Eliminar la imagen de Firebase Storage
+      await imagenRef.delete();
 
-      // Eliminar la foto de Firebase Storage si es necesario
-      await deleteImageFromStorage(image.path);
+      print('Imagen eliminada de Firebase Storage correctamente');
     } catch (e) {
-      print('Error al eliminar la foto: $e');
+      print('Error al eliminar la imagen de Firebase Storage: $e');
     }
   }
 }

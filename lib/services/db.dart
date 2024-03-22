@@ -190,11 +190,7 @@ class DatabaseHelper {
       String urlsString =
           foto.map((url) => "'$url'").join(','); // Unir las URLs con comas
       // Validación de parámetros
-      if (valorDepartamento.isEmpty ||
-          valorUbicacion.isEmpty ||
-          idProbl <= 0 ||
-          idObra <= 0 ||
-          idTiend <= 0) {
+      if (valorDepartamento.isEmpty || valorUbicacion.isEmpty || idTiend <= 0) {
         throw ArgumentError(
             'Los parámetros no pueden estar vacíos o ser menores o iguales a cero.');
       }
