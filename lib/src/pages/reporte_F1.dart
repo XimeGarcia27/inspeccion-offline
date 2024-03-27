@@ -11,7 +11,7 @@ import 'package:share_plus/share_plus.dart';
 class ReporteF1Screen extends StatelessWidget {
   final int idTienda;
 
-  ReporteF1Screen({Key? key, required this.idTienda}) : super(key: key);
+  const ReporteF1Screen({Key? key, required this.idTienda}) : super(key: key);
 
   Future<List<Map<String, dynamic>>> _cargarReporte(int idTienda) async {
     DatabaseHelper databaseHelper = DatabaseHelper();
