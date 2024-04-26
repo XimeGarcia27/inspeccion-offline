@@ -1,28 +1,34 @@
 import 'dart:io';
-import 'package:app_inspections/services/db.dart';
+import 'package:app_inspections/services/auth_service.dart';
+import 'package:app_inspections/services/db_online.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
+import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:pdf/widgets.dart' as pdfWidgets;
 import 'package:flutter/services.dart' show ByteData, Uint8List, rootBundle;
 
 class ReporteScreen extends StatelessWidget {
   final int idTienda;
+  final String nomTienda;
 
-  const ReporteScreen({Key? key, required this.idTienda}) : super(key: key);
+  const ReporteScreen(
+      {Key? key, required this.idTienda, required this.nomTienda})
+      : super(key: key);
 
   Future<List<Map<String, dynamic>>> _cargarReporte(int idTienda) async {
     DatabaseHelper databaseHelper = DatabaseHelper();
     return await databaseHelper.mostrarCantidades(idTienda);
   }
 
-  void _descargarPDF(BuildContext context) async {
+  void _descargarPDF(BuildContext context, String? user) async {
     // Obtener los datos del informe
     List<Map<String, dynamic>> datos = await _cargarReporte(idTienda);
 
     // Generar el PDF
-    File pdfFile = await generatePDF(datos);
+    File pdfFile = await generatePDF(datos, nomTienda, user);
 
     // Abrir el diálogo de compartir para compartir o guardar el PDF
     // ignore: deprecated_member_use
@@ -31,6 +37,8 @@ class ReporteScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    String? user = authService.currentUser;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -49,7 +57,7 @@ class ReporteScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.download, color: Colors.white),
             onPressed: () {
-              //_descargarPDF(context);
+              //_descargarPDF(context, user);
             },
           ),
         ],
@@ -70,15 +78,102 @@ class ReporteWidget extends StatefulWidget {
   State<ReporteWidget> createState() => _ReporteWidgetState();
 }
 
-Future<File> generatePDF(List<Map<String, dynamic>> data) async {
+Future<File> generatePDF(
+    List<Map<String, dynamic>> data, String nomTiend, String? user) async {
   // Carga la fuente personalizada
   final pdfWidgets.Font customFont = pdfWidgets.Font.ttf(
     await rootBundle.load('assets/fonts/OpenSans-Italic.ttf'),
   );
   final pdf = pdfWidgets.Document();
+  final dateFormatter = DateFormat('yyyy-MM-dd');
+  final formattedDate = dateFormatter.format(DateTime.now());
 
   // Carga la imagen de forma asíncrona
   final Uint8List imageData = await _loadImageData('assets/logoconexsa.png');
+  final Uint8List backgroundImageData =
+      await _loadImageData('assets/portada1.png');
+
+  pdf.addPage(
+    pdfWidgets.Page(
+      pageFormat: PdfPageFormat.a4.copyWith(
+        marginLeft: 0, // Margen izquierdo reducido
+        marginRight: -60, // Margen derecho reducido
+        marginTop: 0, // Margen superior reducido
+        marginBottom: 0,
+      ),
+      build: (context) {
+        return pdfWidgets.Stack(
+          alignment: pdfWidgets.Alignment.center,
+          children: [
+            // Fondo de la página (imagen)
+            pdfWidgets.Positioned.fill(
+              child: pdfWidgets.Image(
+                pdfWidgets.MemoryImage(backgroundImageData),
+                fit: pdfWidgets
+                    .BoxFit.cover, // Adaptar la imagen para cubrir toda el área
+              ),
+            ),
+
+            pdfWidgets.Center(
+              child: pdfWidgets.Column(
+                mainAxisAlignment: pdfWidgets.MainAxisAlignment.center,
+                children: [
+                  // Logo
+                  pdfWidgets.Positioned(
+                    right: 0,
+                    top: 0,
+                    child: pdfWidgets.Container(
+                      margin: const pdfWidgets.EdgeInsets.all(5),
+                      child:
+                          pdfWidgets.Image(pdfWidgets.MemoryImage(imageData)),
+                      width: 250, // Ancho de la imagen
+                    ),
+                  ),
+                  pdfWidgets.SizedBox(
+                      height: 20), // Espacio entre el logo y el texto siguiente
+
+                  pdfWidgets.Text(
+                    'Reporte de Contrastista',
+                    style: pdfWidgets.TextStyle(
+                      font: customFont,
+                      fontSize: 30,
+                      fontWeight: pdfWidgets.FontWeight.bold,
+                      color: PdfColors.blueGrey500,
+                    ),
+                  ),
+                  pdfWidgets.Text(
+                    'Fecha: $formattedDate',
+                    style: pdfWidgets.TextStyle(
+                      font: customFont,
+                      fontSize: 18,
+                      color: PdfColors.black,
+                    ),
+                  ),
+                  pdfWidgets.Text(
+                    'Tienda: $nomTiend',
+                    style: pdfWidgets.TextStyle(
+                      font: customFont,
+                      fontSize: 18,
+                      color: PdfColors.black,
+                    ),
+                  ),
+                  pdfWidgets.Text(
+                    'Nombre de Inspector: $user',
+                    style: pdfWidgets.TextStyle(
+                      font: customFont,
+                      fontSize: 18,
+                      color: PdfColors.black,
+                    ),
+                  ),
+                  // Agrega más datos de la portada según tus necesidades
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    ),
+  );
 
   // Añade la página al PDF
   pdf.addPage(
@@ -133,7 +228,10 @@ Future<File> generatePDF(List<Map<String, dynamic>> data) async {
                           row['cantidad_total'].toString(),
                         ],
                     ],
-                    border: null, // Elimina el borde de la tabla
+                    border: pdfWidgets.TableBorder.all(
+                      color: PdfColors.black,
+                      width: 1,
+                    ),
                     cellAlignment: pdfWidgets.Alignment.center,
                     cellStyle: const pdfWidgets.TextStyle(
                       fontSize: 12,
@@ -146,20 +244,6 @@ Future<File> generatePDF(List<Map<String, dynamic>> data) async {
                     headerDecoration: const pdfWidgets.BoxDecoration(
                       color: PdfColors
                           .grey200, // Cambia el color de fondo del encabezado
-                    ),
-                  ),
-                  pdfWidgets.Positioned.fill(
-                    child: pdfWidgets.Center(
-                      // Rota la imagen en sentido contrario a las agujas del reloj
-                      child: pdfWidgets.Opacity(
-                        opacity: 0.1, // Establece la opacidad de la imagen
-
-                        child: pdfWidgets.Image(
-                          pdfWidgets.MemoryImage(imageData),
-                          width: 300, // Ancho deseado de la imagen
-                          height: 300, // Alto deseado de la imagen
-                        ),
-                      ),
                     ),
                   ),
                 ],

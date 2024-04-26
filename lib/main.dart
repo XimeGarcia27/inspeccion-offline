@@ -1,22 +1,70 @@
+import 'package:app_inspections/models/mano_obra.dart';
+import 'package:app_inspections/models/materiales.dart';
+import 'package:app_inspections/models/problemas.dart';
+import 'package:app_inspections/models/reporte_model.dart';
+import 'package:app_inspections/models/tiendas.dart';
+import 'package:app_inspections/models/usuarios.dart';
 import 'package:app_inspections/services/auth_service.dart';
-import 'package:app_inspections/services/db.dart';
+import 'package:app_inspections/services/db_offline.dart';
+import 'package:app_inspections/services/db_online.dart';
 import 'package:app_inspections/src/pages/f1.dart';
 import 'package:app_inspections/src/pages/fotos_prueba.dart';
 import 'package:app_inspections/src/pages/inicio_indv.dart';
-import 'package:app_inspections/src/pages/reporteGeneral.dart';
+import 'package:app_inspections/src/pages/prueba.dart';
 import 'package:app_inspections/src/pages/screens.dart';
 import 'package:app_inspections/src/pages/users.dart';
+import 'package:app_inspections/src/pages/utils/check_internet_connection.dart';
 import 'package:app_inspections/src/screens/home_foto.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+final internetChecker = CheckInternetConnection();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  final dbHelper = DatabaseHelper();
-  await AuthService().openConnection();
-  runApp(AppState(dbHelper: dbHelper));
+
+  //inicializa bd online
+  DatabaseHelper dbHelper;
+
+  // Llama a la función para insertar los datos iniciales de materiales
+  insertInitialDataM();
+  //llamar a la funcion para insertar datos iniciales de problemas
+  insertInitialDataP();
+  //llamar a la funcion para insertar datos iniciales de mano de obra
+  insertInitialDataO();
+  //llamar a la funcion para inserta r datos iniciales de tiendas
+  insertInitialDataT();
+  //llamar a la funcion para insertar datos iniciales de usuarios
+  insertInitialDataUser();
+
+  dbHelper = DatabaseHelper();
+
+  runApp(AppState(
+    dbHelper: dbHelper,
+  ));
+
+  // Suscribe para recibir actualizaciones sobre el estado de la conexión
+
+  internetChecker.internetStatus().listen((status) async {
+    print('Estado de conexión actualizado: $status');
+    // Aquí puedes manejar la lógica basada en el estado de la conexión
+    // Por ejemplo, puedes llamar a la función de sincronización con PostgreSQL si el estado es online
+    if (status == ConnectionStatus.online) {
+      // Supongamos que tienes un futuro que resuelve en una lista de reportes
+      Future<List<Reporte>> futuroReportes =
+          DatabaseProvider.leerReportesDesdeSQLite();
+
+      // Espera el futuro para obtener la lista de reportes
+      List<Reporte> listaReportes = await futuroReportes;
+      // Aquí puedes llamar a tu función para sincronizar con PostgreSQL
+
+      await DatabaseHelper.sincronizarConPostgreSQL(listaReportes);
+    }
+  });
+
+  return;
 }
 
 class NotificationsServices {
@@ -56,14 +104,12 @@ class MyApp extends StatelessWidget {
         "inicioInsp": (_) => const InicioInspeccion(),
         "inspectienda": (_) => const InspeccionTienda(initialTabIndex: 0),
         "f1": (_) => const F1Screen(idTienda: 1),
-        "reporte": (_) => const ReporteScreen(
-              idTienda: 1,
-            ),
         "inicio": (_) =>
             const InicioScreen(idTienda: 1, initialTabIndex: 0, nomTienda: ''),
         "home": (_) => HomeFoto(),
         "foto": (_) => FotosPrueba(),
         "user": (_) => const UserInsertion(),
+        "prueba": (_) => const FormPrincipal(),
       },
       scaffoldMessengerKey: NotificationsServices.messengerKey,
       theme: ThemeData.light().copyWith(

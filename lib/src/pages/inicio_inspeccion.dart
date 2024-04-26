@@ -1,6 +1,10 @@
+import 'dart:async';
+
+import 'package:app_inspections/models/tiendas.dart';
 import 'package:app_inspections/search/search_delegate.dart';
 import 'package:app_inspections/services/auth_service.dart';
-import 'package:app_inspections/services/db.dart';
+import 'package:app_inspections/services/db_offline.dart';
+import 'package:app_inspections/src/pages/utils/check_internet_connection.dart';
 import 'package:app_inspections/src/widgets/card_container.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -28,18 +32,45 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  //List<Map<String, dynamic>> datos = [];
+  List<Tiendas> tiendas = [];
+
+  //verificar la conexion de internet
+  late final CheckInternetConnection _internetConnection;
+  late StreamSubscription<ConnectionStatus> _connectionSubscription;
+  ConnectionStatus _currentStatus = ConnectionStatus.online;
 
   @override
   void initState() {
     super.initState();
+    loadTiendas();
+    _internetConnection = CheckInternetConnection();
+    _connectionSubscription =
+        _internetConnection.internetStatus().listen((status) {
+      setState(() {
+        _currentStatus = status;
+      });
+    });
+
+    @override
+    void dispose() {
+      _connectionSubscription.cancel();
+      _internetConnection.close();
+      super.dispose();
+    }
+  }
+
+  Future<void> loadTiendas() async {
+    List<Tiendas> loadedTiendas = await DatabaseProvider.showTiendas();
+    setState(() {
+      tiendas = loadedTiendas;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context, listen: false);
     // Después de que el usuario inicie sesión con éxito
-
+    //if (_currentStatus == ConnectionStatus.offline) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 174, 174, 174),
       appBar: AppBar(
@@ -114,44 +145,29 @@ class _HomeState extends State<Home> {
                 ),
                 const SizedBox(height: 40),
                 Expanded(
-                  child: FutureBuilder(
-                    future: DatabaseHelper.mostrarTiendas(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        //print(snapshot.data);
-                        return const Center(child: CircularProgressIndicator());
-                      } else if (snapshot.hasError) {
-                        return Center(child: Text('Error: ${snapshot.error}'));
-                      } else {
-                        List<Map<String, dynamic>> datos = snapshot.data!;
-                        return ListView.builder(
-                          itemCount: datos.length,
+                  child: tiendas.isEmpty
+                      ? Center(child: CircularProgressIndicator())
+                      : ListView.builder(
+                          itemCount: tiendas.length,
                           itemBuilder: (context, index) {
-                            final dato = datos[index];
-                            print("datos $dato");
-                            int idTiendaSeleccionada = dato[
-                                'id_tienda']; // Asumiendo que el id de la tienda está en 'id_tienda'
+                            final dato = tiendas[index];
                             return ListTile(
-                              title: Text(
-                                  '${dato['cod_tienda']} ${dato['nom_tienda']}'),
+                              title: Text('${dato.codigo} ${dato.nombre}'),
                               onTap: () {
                                 String nombreTiendaSeleccionada =
-                                    '${dato['cod_tienda']} ${dato['nom_tienda']}';
+                                    '${dato.codigo} ${dato.nombre}';
                                 Navigator.pushNamed(
                                   context,
                                   'inspectienda',
                                   arguments: {
                                     'nombreTienda': nombreTiendaSeleccionada,
-                                    'idTienda': idTiendaSeleccionada,
+                                    'idTienda': dato.id,
                                   },
                                 );
                               },
                             );
                           },
-                        );
-                      }
-                    },
-                  ),
+                        ),
                 ),
               ],
             ),
@@ -159,5 +175,13 @@ class _HomeState extends State<Home> {
         ),
       ),
     );
+    /* } else {
+      // Si no hay conexión a Internet, mostrar el widget de No Internet
+      return const Scaffold(
+        body: Center(
+          child: NoInternet(), // Usar el widget NoInternetWidget
+        ),
+      );
+    } */
   }
 }

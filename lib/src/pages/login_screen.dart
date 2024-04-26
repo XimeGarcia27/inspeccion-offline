@@ -4,11 +4,44 @@ import 'package:app_inspections/src/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class LoginScreen extends StatelessWidget {
+import 'package:app_inspections/src/pages/utils/check_internet_connection.dart';
+import 'dart:async';
+
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  //verificar la conexion a internet
+  late final CheckInternetConnection _internetConnection;
+  late StreamSubscription<ConnectionStatus> _connectionSubscription;
+  ConnectionStatus _currentStatus = ConnectionStatus.online;
+
+  @override
+  void initState() {
+    super.initState();
+    _internetConnection = CheckInternetConnection();
+    _connectionSubscription =
+        _internetConnection.internetStatus().listen((status) {
+      setState(() {
+        _currentStatus = status;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _connectionSubscription.cancel();
+    _internetConnection.close();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    //if (_currentStatus == ConnectionStatus.online) {
     return Scaffold(
       body: AuthBackground(
         child: SingleChildScrollView(
@@ -39,7 +72,7 @@ class LoginScreen extends StatelessWidget {
                 ),
               ),
               // Botón "Crear una nueva cuenta"
-              TextButton(
+              /* TextButton(
                 onPressed: () {
                   Navigator.pushReplacementNamed(context, 'registro');
                 },
@@ -57,12 +90,20 @@ class LoginScreen extends StatelessWidget {
                     color: const Color.fromRGBO(169, 27, 96, 1),
                   ),
                 ),
-              ),
+              ), */
             ],
           ),
         ),
       ),
     );
+    /*  } else {
+      // Si no hay conexión a Internet, mostrar el widget de No Internet
+      return const Scaffold(
+        body: Center(
+          child: NoInternet(), // Usar el widget NoInternetWidget
+        ),
+      );
+    } */
   }
 }
 

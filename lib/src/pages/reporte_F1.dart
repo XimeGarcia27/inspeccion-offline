@@ -1,38 +1,39 @@
-import 'package:app_inspections/services/db.dart';
+import 'package:app_inspections/models/reporte_model.dart';
+import 'package:app_inspections/services/auth_service.dart';
+import 'package:app_inspections/services/db_offline.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/painting.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
 import 'package:pdf/pdf.dart';
 // ignore: library_prefixes
 import 'package:pdf/widgets.dart' as pdfWidgets;
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:intl/intl.dart';
 
 class ReporteF1Screen extends StatelessWidget {
   final int idTienda;
+  final String nomTienda;
 
-  const ReporteF1Screen({Key? key, required this.idTienda}) : super(key: key);
+  const ReporteF1Screen(
+      {Key? key, required this.idTienda, required this.nomTienda})
+      : super(key: key);
 
-  Future<List<Map<String, dynamic>>> _cargarReporte(int idTienda) async {
-    DatabaseHelper databaseHelper = DatabaseHelper();
-    return databaseHelper.mostrarReporteF1(idTienda);
+  Future<List<Reporte>> _cargarReporte(int idTienda) async {
+    DatabaseProvider databaseProvider = DatabaseProvider();
+    return databaseProvider.mostrarReporteF1(idTienda);
   }
 
-  Future<File> savePDFLocally(pdfWidgets.Document pdf) async {
-    final Directory directory = await getApplicationDocumentsDirectory();
-    final String filePath = '${directory.path}/reporteContratista.pdf';
-    final File file = File(filePath);
-    await file.writeAsBytes(await pdf.save());
-    return file;
-  }
-
-  void _descargarPDF(BuildContext context) async {
+  void _descargarPDF(BuildContext context, String? user) async {
     // Obtener los datos del informe
-    List<Map<String, dynamic>> datos = await _cargarReporte(idTienda);
+    List<Reporte> datos = await _cargarReporte(idTienda);
     print("DATOS DE REPORTEE $datos");
 
     // Generar el PDF
-    File pdfFile = await generatePDF(datos);
+    File pdfFile = await generatePDF(datos, nomTienda, user);
 
     // Abrir el diálogo de compartir para compartir o guardar el PDF
     // ignore: deprecated_member_use
@@ -41,6 +42,8 @@ class ReporteF1Screen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    String? user = authService.currentUser;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -59,7 +62,7 @@ class ReporteF1Screen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.download, color: Colors.white),
             onPressed: () {
-              _descargarPDF(context);
+              _descargarPDF(context, user);
             },
           ),
         ],
@@ -185,67 +188,171 @@ class ReporteF1Widget extends StatefulWidget {
   return file;
 } */
 
-Future<File> generatePDF(List<Map<String, dynamic>> data) async {
+Future<File> generatePDF(
+    List<Reporte> data, String nomTiend, String? user) async {
   final pdfWidgets.Font customFont = pdfWidgets.Font.ttf(
     await rootBundle.load('assets/fonts/OpenSans-Italic.ttf'),
   );
-  final pdf = pdfWidgets.Document();
+  final dateFormatter = DateFormat('yyyy-MM-dd');
+  final formattedDate = dateFormatter.format(DateTime.now());
 
-  // Dentro de tu código de generación de PDF
-  pdf.addPage(
-    pdfWidgets.MultiPage(
-      orientation: pdfWidgets.PageOrientation.landscape,
-      build: (context) => [
-        pdfWidgets.Stack(
-          children: [
-            pdfWidgets.Text(
-              "Reporte de Contrastista",
-              style: pdfWidgets.TextStyle(
-                font: customFont,
-                fontSize: 20,
-                fontWeight: pdfWidgets.FontWeight.bold,
-                color: PdfColors.blueGrey500,
+  final pdf = pdfWidgets.Document();
+  // Carga la imagen de forma asíncrona
+  final Uint8List imageData = await _loadImageData('assets/logoconexsa.png');
+
+  const int itemsPerPage = 20; // Número de elementos por página
+
+  // Calcular el número total de páginas
+  final int totalPages = (data.length / itemsPerPage).ceil();
+
+  for (int pageIndex = 0; pageIndex < totalPages; pageIndex++) {
+    // Calcular los índices de inicio y fin para la página actual
+    final int startIndex = pageIndex * itemsPerPage;
+    final int endIndex = (startIndex + itemsPerPage < data.length)
+        ? startIndex + itemsPerPage
+        : data.length;
+    // Obtener los datos de la página actual
+    final List<Reporte> pageData = data.sublist(startIndex, endIndex);
+// Carga la imagen de forma asíncrona
+    final Uint8List backgroundImageData =
+        await _loadImageData('assets/portada1.png');
+
+    pdf.addPage(
+      pdfWidgets.Page(
+        pageFormat: PdfPageFormat.a4.copyWith(
+          marginLeft: 0, // Margen izquierdo reducido
+          marginRight: -60, // Margen derecho reducido
+          marginTop: 0, // Margen superior reducido
+          marginBottom: 0,
+        ),
+        build: (context) {
+          return pdfWidgets.Stack(
+            alignment: pdfWidgets.Alignment.center,
+            children: [
+              // Fondo de la página (imagen)
+              pdfWidgets.Positioned.fill(
+                child: pdfWidgets.Image(
+                  pdfWidgets.MemoryImage(backgroundImageData),
+                  fit: pdfWidgets.BoxFit
+                      .cover, // Adaptar la imagen para cubrir toda el área
+                ),
               ),
-            ),
-            pdfWidgets.SizedBox(height: 30),
+
+              pdfWidgets.Center(
+                child: pdfWidgets.Column(
+                  mainAxisAlignment: pdfWidgets.MainAxisAlignment.center,
+                  children: [
+                    // Logo
+                    pdfWidgets.Positioned(
+                      right: 0,
+                      top: 0,
+                      child: pdfWidgets.Container(
+                        margin: const pdfWidgets.EdgeInsets.all(5),
+                        child:
+                            pdfWidgets.Image(pdfWidgets.MemoryImage(imageData)),
+                        width: 250, // Ancho de la imagen
+                      ),
+                    ),
+                    pdfWidgets.SizedBox(
+                        height:
+                            20), // Espacio entre el logo y el texto siguiente
+
+                    pdfWidgets.Text(
+                      'Reporte de Contrastista',
+                      style: pdfWidgets.TextStyle(
+                        font: customFont,
+                        fontSize: 30,
+                        fontWeight: pdfWidgets.FontWeight.bold,
+                        color: PdfColors.blueGrey500,
+                      ),
+                    ),
+                    pdfWidgets.Text(
+                      'Fecha: $formattedDate',
+                      style: pdfWidgets.TextStyle(
+                        font: customFont,
+                        fontSize: 18,
+                        color: PdfColors.black,
+                      ),
+                    ),
+                    pdfWidgets.Text(
+                      'Tienda: $nomTiend',
+                      style: pdfWidgets.TextStyle(
+                        font: customFont,
+                        fontSize: 18,
+                        color: PdfColors.black,
+                      ),
+                    ),
+                    pdfWidgets.Text(
+                      'Nombre de Inspector: $user',
+                      style: pdfWidgets.TextStyle(
+                        font: customFont,
+                        fontSize: 18,
+                        color: PdfColors.black,
+                      ),
+                    ),
+                    // Agrega más datos de la portada según tus necesidades
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    pdf.addPage(
+      pdfWidgets.MultiPage(
+        //orientation: pdfWidgets.PageOrientation.landscape,
+        pageFormat: PdfPageFormat.a4.copyWith(
+          marginLeft: 30, // Margen izquierdo reducido
+          marginRight: -20, // Margen derecho reducido
+          marginTop: 40, // Margen superior reducido
+        ),
+
+        build: (context) {
+          List<pdfWidgets.Widget> widgets = [
             // ignore: deprecated_member_use
             pdfWidgets.Table.fromTextArray(
               context: context,
               data: [
-                ['Departamento', 'Ubicación', 'Problema', 'URL FOTO'],
-                for (var row in data)
+                [
+                  'Departamento',
+                  'Ubicación',
+                  'Problema',
+                  'Material',
+                  'Cantidad',
+                  'Mano de Obra',
+                  'Cantidad',
+                ],
+                for (var row in pageData)
                   [
-                    row['nom_dep'].toString(),
-                    row['clave_ubi'].toString(),
+                    row.nomDep.toString(),
+                    row.claveUbi.toString(),
                     pdfWidgets.Text(
-                      row['nom_probl'].toString(),
+                      row.nomProbl.toString(),
                       style: pdfWidgets.TextStyle(
-                        font: customFont,
+                        font: customFont, // Usa la fuente personalizada aquí
                         fontSize: 12,
                         color: PdfColors.black,
                       ),
                     ),
-                    pdfWidgets.Column(
-                      crossAxisAlignment: pdfWidgets.CrossAxisAlignment.start,
-                      children: [
-                        for (var url in row['foto'])
-                          pdfWidgets.Link(
-                            destination: url,
-                            child: pdfWidgets.Text(
-                              'Ver imagen',
-                              style: pdfWidgets.TextStyle(
-                                font: customFont,
-                                fontSize: 12,
-                                color: PdfColors.blue,
-                                decoration: pdfWidgets.TextDecoration.underline,
-                              ),
-                            ),
-                          ),
-                      ],
+                    pdfWidgets.Text(
+                      row.nomMat.toString(),
+                      style: pdfWidgets.TextStyle(
+                        font: customFont, // Usa la fuente personalizada aquí
+                        fontSize: 12,
+                        color: PdfColors.black,
+                      ),
                     ),
+                    row.cantMat.toString(),
+                    row.nomObr.toString(),
+                    row.cantObr.toString(),
                   ]
               ],
-              border: null,
+              border: pdfWidgets.TableBorder.all(
+                color: PdfColors.black,
+                width: 1,
+              ),
               cellAlignment: pdfWidgets.Alignment.center,
               cellStyle: const pdfWidgets.TextStyle(
                 fontSize: 12,
@@ -253,17 +360,108 @@ Future<File> generatePDF(List<Map<String, dynamic>> data) async {
               ),
               headerStyle: pdfWidgets.TextStyle(
                 fontWeight: pdfWidgets.FontWeight.bold,
-                color: PdfColors.black,
+                color: PdfColors.white,
               ),
               headerDecoration: const pdfWidgets.BoxDecoration(
-                color: PdfColors.grey200,
+                color: PdfColors.blueGrey700,
               ),
             ),
-          ],
-        )
-      ],
-    ),
-  );
+          ];
+          return widgets;
+        },
+
+        /* pdfWidgets.Stack(
+              children: [
+                pdfWidgets.Text(
+                  "Reporte de Contrastista",
+                  style: pdfWidgets.TextStyle(
+                    font: customFont,
+                    fontSize: 20,
+                    fontWeight: pdfWidgets.FontWeight.bold,
+                    color: PdfColors.blueGrey500,
+                  ),
+                ),
+                pdfWidgets.SizedBox(height: 30),
+                // ignore: deprecated_member_use
+                pdfWidgets.Table.fromTextArray(
+                  context: context,
+                  data: [
+                    [
+                      'Departamento',
+                      'Ubicación',
+                      'Problema',
+                      'Material',
+                      'Especifique (Otro)',
+                      'Cantidad',
+                      'Mano de Obra',
+                      'Especifique (Otro)',
+                      'Cantidad',
+                      'URL'
+                    ],
+                    for (var row in pageData)
+                      [
+                        row['nom_dep'].toString(),
+                        row['clave_ubi'].toString(),
+                        pdfWidgets.Text(
+                          row['nom_probl'].toString(),
+                          style: pdfWidgets.TextStyle(
+                            font: customFont,
+                            color: PdfColors.black,
+                          ),
+                        ),
+                        pdfWidgets.Text(
+                          row['nom_mat'].toString(),
+                          style: pdfWidgets.TextStyle(
+                            font:
+                                customFont, // Usa la fuente personalizada aquí
+                            color: PdfColors.black,
+                          ),
+                        ),
+                        row['otro'].toString(),
+                        row['cant_mat'].toString(),
+                        row['nom_obr'].toString(),
+                        row['otro_obr'].toString(),
+                        row['cant_obr'].toString(),
+                        /* pdfWidgets.Column(
+                          crossAxisAlignment:
+                              pdfWidgets.CrossAxisAlignment.start,
+                          children: [
+                            for (var url in row['foto'])
+                              pdfWidgets.Link(
+                                destination: url,
+                                child: pdfWidgets.Text(
+                                  'Ver imagen',
+                                  style: pdfWidgets.TextStyle(
+                                    font: customFont,
+                                    fontSize: 12,
+                                    color: PdfColors.blue,
+                                    decoration:
+                                        pdfWidgets.TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ), */
+                      ]
+                  ],
+                  cellAlignment: pdfWidgets.Alignment.center,
+                  cellStyle: const pdfWidgets.TextStyle(
+                    fontSize: 12,
+                    color: PdfColors.black,
+                  ),
+                  headerStyle: pdfWidgets.TextStyle(
+                    fontWeight: pdfWidgets.FontWeight.bold,
+                    color: PdfColors.black,
+                  ),
+                  headerDecoration: const pdfWidgets.BoxDecoration(
+                    color: PdfColors.grey200,
+                  ),
+                ),
+              ],
+            ), */
+      ),
+    );
+  }
 
   // Guarda el PDF en un archivo
   final Directory directory = await getApplicationDocumentsDirectory();
@@ -280,9 +478,8 @@ Future<Uint8List> _loadImageData(String imagePath) async {
 }
 
 class _ReporteWidgetState extends State<ReporteF1Widget> {
-  late Future<List<Map<String, dynamic>>> _futureReporte;
+  late Future<List<Reporte>> _futureReporte;
   String datounico = "";
-  late PdfImage imagen;
 
   @override
   void initState() {
@@ -290,9 +487,9 @@ class _ReporteWidgetState extends State<ReporteF1Widget> {
     _futureReporte = _cargarReporte(widget.idTienda);
   }
 
-  Future<List<Map<String, dynamic>>> _cargarReporte(int idTienda) async {
-    DatabaseHelper databaseHelper = DatabaseHelper();
-    return databaseHelper.mostrarReporteF1(widget.idTienda);
+  Future<List<Reporte>> _cargarReporte(int idTienda) async {
+    DatabaseProvider databaseProvider = DatabaseProvider();
+    return databaseProvider.mostrarReporteF1(idTienda);
   }
 
   @override
@@ -305,9 +502,9 @@ class _ReporteWidgetState extends State<ReporteF1Widget> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(child: Text('Revisa tu conexión a internet'));
           } else {
-            List<Map<String, dynamic>> datos = snapshot.data!;
+            List<Reporte> datos = snapshot.data!;
             return ListView(children: [
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -371,64 +568,64 @@ class _ReporteWidgetState extends State<ReporteF1Widget> {
                     )),
                   ],
                   rows: datos.map((dato) {
-                    datounico = dato['dato_unico'];
+                    datounico = dato.datoU;
                     return DataRow(
                       cells: [
                         DataCell(
-                          Text('${dato['nom_dep']}'),
+                          Text('${dato.nomDep}'),
                         ),
                         DataCell(
-                          Text('${dato['clave_ubi']}'),
-                        ),
-                        DataCell(
-                          Container(
-                            width: (MediaQuery.of(context).size.width / 10) * 3,
-                            padding: const EdgeInsets.all(3),
-                            child: Center(child: Text('${dato['nom_probl']}')),
-                          ),
+                          Text('${dato.claveUbi}'),
                         ),
                         DataCell(
                           Container(
                             width: (MediaQuery.of(context).size.width / 10) * 3,
                             padding: const EdgeInsets.all(3),
-                            child: Text('${dato['nom_mat']}'),
+                            child: Center(child: Text('${dato.nomProbl}')),
+                          ),
+                        ),
+                        DataCell(
+                          Container(
+                            width: (MediaQuery.of(context).size.width / 10) * 3,
+                            padding: const EdgeInsets.all(3),
+                            child: Text('${dato.nomMat}'),
                           ),
                         ),
                         DataCell(
                           Container(
                             padding: const EdgeInsets.all(3),
-                            child: Center(child: Text('${dato['otro']}')),
+                            child: Center(child: Text('${dato.otro}')),
                           ),
                         ),
                         DataCell(
                           Container(
                             padding: const EdgeInsets.all(3),
-                            child: Text('${dato['cant_mat']}'),
+                            child: Text('${dato.cantMat}'),
                           ),
                         ),
                         DataCell(
                           Container(
                             padding: const EdgeInsets.all(3),
-                            child: Text('${dato['nom_obr']}'),
+                            child: Text('${dato.nomObr}'),
                           ),
                         ),
                         DataCell(
                           Container(
                             padding: const EdgeInsets.all(3),
-                            child: Text('${dato['otro_obr']}'),
+                            child: Text('${dato.otroObr}'),
                           ),
                         ),
                         DataCell(
                           Container(
                             padding: const EdgeInsets.all(3),
-                            child: Text('${dato['cant_obr']}'),
+                            child: Text('${dato.cantObr}'),
                           ),
                         ),
                         DataCell(
-                          Container(
-                            padding: const EdgeInsets.all(3),
+                          SizedBox(
+                            width: 500,
                             child: Row(
-                              children: dato['foto'].map<Widget>((url) {
+                              children: [dato.foto].map<Widget>((url) {
                                 return Padding(
                                   padding: const EdgeInsets.all(4),
                                   child: InkWell(
@@ -438,28 +635,28 @@ class _ReporteWidgetState extends State<ReporteF1Widget> {
                                         context: context,
                                         builder: (context) => AlertDialog(
                                           content: Image.network(
-                                            url,
+                                            url.trim(), // Elimina espacios en blanco
                                             errorBuilder:
                                                 (context, error, stackTrace) {
                                               // Manejar el error y mostrar una imagen de respaldo
                                               return Image.asset(
                                                   'assets/no_image.png');
                                             },
-                                            fit: BoxFit
-                                                .contain, // Ajusta la imagen al tamaño del contenedor
+                                            fit: BoxFit.contain,
                                           ),
                                         ),
                                       );
                                     },
                                     child: Image.network(
-                                      url,
+                                      url.trim(), // Elimina espacios en blanco
                                       errorBuilder:
                                           (context, error, stackTrace) {
                                         // Manejar el error y mostrar una imagen de respaldo
                                         return Image.asset(
-                                            'assets/no_image.png',
-                                            width: 70,
-                                            height: 70);
+                                          'assets/no_image.png',
+                                          width: 70,
+                                          height: 70,
+                                        );
                                       },
                                     ),
                                   ),
@@ -476,22 +673,6 @@ class _ReporteWidgetState extends State<ReporteF1Widget> {
             ]);
           }
         },
-      ),
-    );
-  }
-}
-
-class ImageViewScreen extends StatelessWidget {
-  final File image;
-
-  const ImageViewScreen({Key? key, required this.image}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Image')),
-      body: Center(
-        child: Image.file(image),
       ),
     );
   }

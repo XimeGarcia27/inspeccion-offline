@@ -1,6 +1,8 @@
+import 'package:app_inspections/services/db_offline.dart';
 import 'package:flutter/foundation.dart';
 import 'package:postgres/postgres.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:sqflite/sqflite.dart';
 
 enum AuthState { authenticated, unauthenticated }
 
@@ -78,17 +80,16 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<String?> login(String email, String contrasena) async {
+  Future<String?> login(String nomUsu, String contrasena) async {
     try {
-      final connection = await openConnection();
-      final result = await connection.query(
-        'SELECT nombre FROM usuarios WHERE email = @email AND password = @contrasena',
-        substitutionValues: {'email': email, 'contrasena': contrasena},
+      Database database = await DatabaseProvider.openDB();
+      final List<Map<String, dynamic>> results = await database.rawQuery(
+        'SELECT nombre FROM usuarios WHERE nom_usu LIKE ? AND password LIKE ?',
+        ['%$nomUsu%', '%$contrasena%'],
       );
-      if (result.isNotEmpty) {
-        final nombreCompleto = result[0][0] as String;
-        setCurrentUser(
-            nombreCompleto); // Establecer el nombre completo del usuario
+      if (results.isNotEmpty) {
+        final nombreCompleto = results[0]['nombre'] as String;
+        setCurrentUser(nombreCompleto);
         _authState = AuthState.authenticated;
         notifyListeners();
         return null;
@@ -112,7 +113,7 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<String?> readToken() async {
+  /* Future<String?> readToken() async {
     return await storage.read(key: 'token') ?? '';
-  }
+  } */
 }

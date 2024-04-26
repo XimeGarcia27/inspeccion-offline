@@ -1,4 +1,5 @@
-import 'package:app_inspections/services/db.dart';
+import 'package:app_inspections/models/tiendas.dart';
+import 'package:app_inspections/services/db_offline.dart';
 import 'package:flutter/material.dart';
 
 class TiendaSearchDelegate extends SearchDelegate {
@@ -27,8 +28,8 @@ class TiendaSearchDelegate extends SearchDelegate {
 
   @override
   Widget buildResults(BuildContext context) {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: DatabaseHelper.searchTiendas(query),
+    return FutureBuilder<List<Tiendas>>(
+      future: DatabaseProvider.searchTiendas(query),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -38,18 +39,18 @@ class TiendaSearchDelegate extends SearchDelegate {
           return const Center(child: Text('No se encontraron tiendas'));
         }
 
-        List<Map<String, dynamic>> datos = snapshot.data!;
+        List<Tiendas> datos = snapshot.data!;
 
         return ListView.builder(
           itemCount: datos.length,
           itemBuilder: (context, index) {
             final dato = datos[index];
-            int idTiendaSeleccionada = dato['id_tienda'];
+            int? idTiendaSeleccionada = dato.id;
             return ListTile(
-              title: Text('${dato['cod_tienda']} ${dato['nom_tienda']}'),
+              title: Text('${dato.codigo} ${dato.nombre}'),
               onTap: () {
                 String nombreTiendaSeleccionada =
-                    '${dato['cod_tienda']} ${dato['nom_tienda']}';
+                    '${dato.codigo} ${dato.nombre}';
 
                 Navigator.pushNamed(
                   context,
@@ -78,8 +79,8 @@ class TiendaSearchDelegate extends SearchDelegate {
         ),
       );
     }
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: DatabaseHelper.searchTiendas(query),
+    return FutureBuilder<List<Tiendas>>(
+      future: DatabaseProvider.searchTiendas(query),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -89,18 +90,19 @@ class TiendaSearchDelegate extends SearchDelegate {
           return const Center(child: Text('No se encontraron tiendas'));
         }
 
-        List<Map<String, dynamic>> datos = snapshot.data!;
+        List<Tiendas> datos = snapshot.data!;
 
         return ListView.builder(
           itemCount: datos.length,
           itemBuilder: (context, index) {
             final dato = datos[index];
-            int idTiendaSeleccionada = dato['id_tienda'];
+            int? idTiendaSeleccionada = dato.id;
             return ListTile(
-              title: Text('${dato['cod_tienda']} ${dato['nom_tienda']}'),
+              title: Text('${dato.codigo} ${dato.nombre}'),
               onTap: () {
                 String nombreTiendaSeleccionada =
-                    '${dato['cod_tienda']} ${dato['nom_tienda']}';
+                    '${dato.codigo} ${dato.nombre}';
+
                 Navigator.pushNamed(
                   context,
                   'inspectienda',

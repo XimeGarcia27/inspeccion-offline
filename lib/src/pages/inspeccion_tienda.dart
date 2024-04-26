@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:app_inspections/services/auth_service.dart';
+import 'package:app_inspections/src/pages/connection/no_internet.dart';
 import 'package:app_inspections/src/pages/f1.dart';
 import 'package:app_inspections/src/pages/inicio_indv.dart';
+import 'package:app_inspections/src/pages/utils/check_internet_connection.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -18,6 +22,10 @@ class InspeccionTienda extends StatefulWidget {
 
 class _InspeccionTiendaState extends State<InspeccionTienda>
     with SingleTickerProviderStateMixin {
+  //verificar la conexion a internet
+  late final CheckInternetConnection _internetConnection;
+  late StreamSubscription<ConnectionStatus> _connectionSubscription;
+  ConnectionStatus _currentStatus = ConnectionStatus.online;
   //Map<String, dynamic>? tienda;
   late TabController controller;
 
@@ -25,6 +33,13 @@ class _InspeccionTiendaState extends State<InspeccionTienda>
   void initState() {
     // TODO: implement initState
     super.initState();
+    _internetConnection = CheckInternetConnection();
+    _connectionSubscription =
+        _internetConnection.internetStatus().listen((status) {
+      setState(() {
+        _currentStatus = status;
+      });
+    });
     controller = TabController(
         length: 2, vsync: this, initialIndex: widget.initialTabIndex);
 
@@ -36,6 +51,8 @@ class _InspeccionTiendaState extends State<InspeccionTienda>
   @override
   void dispose() {
     // TODO: implement dispose
+    _connectionSubscription.cancel();
+    _internetConnection.close();
     super.dispose();
     controller.dispose();
   }
@@ -49,6 +66,8 @@ class _InspeccionTiendaState extends State<InspeccionTienda>
     final String nombreTienda = arguments['nombreTienda'];
     //print('ID de tienda en InspeccionTienda: ${arguments['idTienda']}');
     int idTi = arguments['idTienda'];
+
+    //if (_currentStatus == ConnectionStatus.online) {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -133,5 +152,13 @@ class _InspeccionTiendaState extends State<InspeccionTienda>
         ],
       ),
     );
+    /* } else {
+      // Si no hay conexión a Internet, mostrar el widget de No Internet
+      return const Scaffold(
+        body: Center(
+          child: NoInternet(), // Usar el widget NoInternetWidget
+        ),
+      );
+    } */
   }
 }

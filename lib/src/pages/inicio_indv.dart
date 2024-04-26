@@ -1,8 +1,12 @@
-import 'package:app_inspections/services/db.dart';
+import 'dart:async';
+
+import 'package:app_inspections/models/reporte_model.dart';
+import 'package:app_inspections/services/db_offline.dart';
 import 'package:app_inspections/src/pages/editar_form.dart';
 import 'package:app_inspections/src/pages/reporteGeneral.dart';
 import 'package:app_inspections/src/pages/reporte_F1.dart';
 import 'package:app_inspections/src/pages/reporte_F2.dart';
+import 'package:app_inspections/src/pages/utils/check_internet_connection.dart';
 import 'package:flutter/material.dart';
 
 class InicioScreen extends StatelessWidget {
@@ -46,32 +50,59 @@ class Inicio extends StatefulWidget {
 }
 
 class _InicioState extends State<Inicio> {
-  late Future<List<Map<String, dynamic>>> _futureReporte;
+  List<Reporte> reporte = [];
+  //verificar la conexion a internet
+  late final CheckInternetConnection _internetConnection;
+  late StreamSubscription<ConnectionStatus> _connectionSubscription;
+  ConnectionStatus _currentStatus = ConnectionStatus.online;
+
   final TextEditingController _searchController = TextEditingController();
   String _searchText = '';
 
   @override
   void initState() {
     super.initState();
-    _futureReporte = _cargarReporte(widget.idTienda);
+    _internetConnection = CheckInternetConnection();
+    _connectionSubscription =
+        _internetConnection.internetStatus().listen((status) {
+      setState(() {
+        _currentStatus = status;
+      });
+    });
   }
 
-  Future<List<Map<String, dynamic>>> _cargarReporte(int idTienda) async {
+  @override
+  void dispose() {
+    _connectionSubscription.cancel();
+    _internetConnection.close();
+    super.dispose();
+  }
+
+  /* Future<List<Map<String, dynamic>>> _cargarReporte(int idTienda) async {
     // Crea una instancia de DatabaseHelper
     DatabaseHelper databaseHelper = DatabaseHelper();
 
     // Llama al método mostrarReporte en la instancia de DatabaseHelper
     return databaseHelper.mostrarReporte(widget.idTienda);
+  } */
+
+  Future<void> cargarReporte(int idTienda) async {
+    List<Reporte> loadedTiendas =
+        await DatabaseProvider.mostrarReporte(widget.idTienda);
+    setState(() {
+      reporte = loadedTiendas;
+    });
   }
 
-  List<Map<String, dynamic>> _filtrarReportes(
-      List<Map<String, dynamic>> reportes, String searchText) {
+  Future<List<Reporte>> _filtrarReportes(
+      List<Reporte> reportes, String searchText) async {
     if (searchText.isEmpty) {
+      reportes = await DatabaseProvider.mostrarReporte(widget.idTienda);
       return reportes; // No hay texto de búsqueda, devuelve todos los reportes
     } else {
       // Filtra los reportes basados en el texto de búsqueda
       return reportes
-          .where((reporte) => reporte['clave_ubi']
+          .where((reporte) => reporte.claveUbi
               .toString()
               .toLowerCase()
               .contains(searchText.toLowerCase()))
@@ -84,7 +115,7 @@ class _InicioState extends State<Inicio> {
     int idTiend = widget.idTienda;
     String nomTienda = widget.nomTienda;
     print("Tienda seleccionadaaa iniciooo $idTiend");
-
+    //if (_currentStatus == ConnectionStatus.offline) {
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 45),
@@ -150,8 +181,8 @@ class _InicioState extends State<Inicio> {
                 scrollDirection: Axis.vertical,
                 child: Column(
                   children: [
-                    FutureBuilder<List<Map<String, dynamic>>>(
-                      future: _futureReporte,
+                    FutureBuilder<List<Reporte>>(
+                      future: DatabaseProvider.mostrarReporte(widget.idTienda),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
@@ -159,91 +190,108 @@ class _InicioState extends State<Inicio> {
                         } else if (snapshot.hasError) {
                           return const Text('Comprueba tu conexión a internet');
                         } else {
-                          // Filtra los reportes basados en el texto de búsqueda
-                          List<Map<String, dynamic>> filteredReportes =
-                              _filtrarReportes(snapshot.data!, _searchText);
-                          return SizedBox(
-                            width: 650.0,
-                            child: DataTable(
-                              horizontalMargin: 0,
-                              columnSpacing: 10,
-                              dataRowHeight: 90,
-                              columns: const [
-                                DataColumn(
-                                  label: SizedBox(
-                                    width: 100,
-                                    child: Text(
-                                      'Ubicación',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 18.0,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                DataColumn(
-                                  label: Text(
-                                    'Departamento',
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 18.0),
-                                  ),
-                                ),
-                                DataColumn(
-                                  label: Text(
-                                    'Problema',
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 18.0),
-                                  ),
-                                ),
-                                DataColumn(
-                                  label: Text('Editar',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 18.0)),
-                                ),
-                              ],
-                              rows: filteredReportes.map((item) {
-                                return DataRow(
-                                  cells: [
-                                    DataCell(
-                                        Text(item['clave_ubi'].toString())),
-                                    DataCell(Text(item['nom_dep'].toString())),
-                                    DataCell(Text(
-                                      item['nom_probl'].toString(),
-                                      softWrap: true,
-                                    )),
-                                    DataCell(
-                                      GestureDetector(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => EditarForm(
-                                                idTienda: idTiend,
-                                                data: item,
-                                                nombreTienda: nomTienda,
-                                              ),
+                          List<Reporte> reportes = snapshot.data!;
+
+                          // Llamar a _filtrarReportes y esperar el resultado
+                          return FutureBuilder<List<Reporte>>(
+                            future: _filtrarReportes(reportes, _searchText),
+                            builder: (context, filteredSnapshot) {
+                              if (filteredSnapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return const CircularProgressIndicator();
+                              } else if (filteredSnapshot.hasError) {
+                                return const Text(
+                                    'Error al filtrar los reportes');
+                              } else {
+                                List<Reporte> filteredReportes =
+                                    filteredSnapshot.data!;
+
+                                // Construir el DataTable con los reportes filtrados
+                                return SizedBox(
+                                  width: 650.0,
+                                  child: DataTable(
+                                    horizontalMargin: 0,
+                                    columnSpacing: 10,
+                                    // ignore: deprecated_member_use
+                                    dataRowHeight: 90,
+                                    columns: const [
+                                      DataColumn(
+                                        label: SizedBox(
+                                          width: 100,
+                                          child: Text(
+                                            'Ubicación',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 18.0,
                                             ),
-                                          );
-                                        },
-                                        child: const Center(
-                                          child: Icon(
-                                            Icons.mode_edit,
-                                            color: Color.fromRGBO(6, 6, 68, 1),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                      DataColumn(
+                                        label: Text(
+                                          'Departamento',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 18.0,
+                                          ),
+                                        ),
+                                      ),
+                                      DataColumn(
+                                        label: Text(
+                                          'Problema',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 18.0,
+                                          ),
+                                        ),
+                                      ),
+                                      DataColumn(
+                                        label: Text(
+                                          'Editar',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 18.0,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                    rows: filteredReportes.map((item) {
+                                      return DataRow(
+                                        cells: [
+                                          DataCell(Text(item.claveUbi)),
+                                          DataCell(Text(item.nomDep)),
+                                          DataCell(Text(
+                                            item.nomProbl,
+                                            softWrap: true,
+                                          )),
+                                          DataCell(
+                                            GestureDetector(
+                                              onTap: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) =>
+                                                        EditarForm(
+                                                      idTienda: idTiend,
+                                                      data: item.toMap(),
+                                                      nombreTienda: nomTienda,
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    }).toList(), // Convertir el Iterable a una lista
+                                  ),
                                 );
-                              }).toList(),
-                            ),
+                              }
+                            },
                           );
                         }
                       },
-                    )
+                    ),
                   ],
                 ),
               ),
@@ -256,14 +304,15 @@ class _InicioState extends State<Inicio> {
                   MaterialPageRoute(
                     builder: (context) => ReporteF1Screen(
                       idTienda: idTiend,
+                      nomTienda: nomTienda,
                     ),
                   ),
                 );
               },
               style: ElevatedButton.styleFrom(
-                primary: const Color.fromRGBO(
-                    6, 6, 68, 1), // Cambia el color de fondo del botón
-                onPrimary: Colors.white, // Cambia el color del texto del botón
+                foregroundColor: Colors.white,
+                backgroundColor: const Color.fromRGBO(
+                    6, 6, 68, 1), // Cambia el color del texto del botón
               ),
               child: const Text('Ver Reporte F1'),
             ),
@@ -274,14 +323,15 @@ class _InicioState extends State<Inicio> {
                   MaterialPageRoute(
                     builder: (context) => ReporteF2Screen(
                       idTienda: idTiend,
+                      nomTienda: nomTienda,
                     ),
                   ),
                 );
               },
               style: ElevatedButton.styleFrom(
-                primary: const Color.fromRGBO(
-                    6, 6, 68, 1), // Cambia el color de fondo del botón
-                onPrimary: Colors.white, // Cambia el color del texto del botón
+                foregroundColor: Colors.white,
+                backgroundColor: const Color.fromRGBO(
+                    6, 6, 68, 1), // Cambia el color del texto del botón
               ),
               child: const Text('Ver Reporte F2'),
             ),
@@ -292,14 +342,15 @@ class _InicioState extends State<Inicio> {
                   MaterialPageRoute(
                     builder: (context) => ReporteScreen(
                       idTienda: idTiend,
+                      nomTienda: nomTienda,
                     ),
                   ),
                 );
               },
               style: ElevatedButton.styleFrom(
-                primary: const Color.fromRGBO(
-                    6, 6, 68, 1), // Cambia el color de fondo del botón
-                onPrimary: Colors.white, // Cambia el color del texto del botón
+                foregroundColor: Colors.white,
+                backgroundColor: const Color.fromRGBO(
+                    6, 6, 68, 1), // Cambia el color del texto del botón
               ),
               child: const Text('Fixture y Mano de Obra'),
             ),
@@ -307,5 +358,13 @@ class _InicioState extends State<Inicio> {
         ),
       ),
     );
+    /* } else {
+      // Si no hay conexión a Internet, mostrar el widget de No Internet
+      return const Scaffold(
+        body: Center(
+          child: NoInternet(), // Usar el widget NoInternetWidget
+        ),
+      );
+    } */
   }
 }

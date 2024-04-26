@@ -1,3 +1,4 @@
+import 'package:app_inspections/models/reporte_model.dart';
 import 'package:app_inspections/services/auth_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -11,7 +12,7 @@ class DatabaseHelper {
     return await AuthService().openConnection();
   }
 
-  /*  static PostgreSQLConnection? connection;
+  static PostgreSQLConnection? connection;
 
   static Future<PostgreSQLConnection> openConnection() async {
     try {
@@ -36,9 +37,9 @@ class DatabaseHelper {
       return connection;
     } catch (e) {
       print('Error al abrir la conexión: $e');
-      throw e;
+      rethrow;
     }
-  } */
+  }
 
   static Future<List<Map<String, dynamic>>> mostrarTiendas() async {
     final connection = await _getConnection();
@@ -181,14 +182,13 @@ class DatabaseHelper {
       String nomObr,
       String otroObr,
       int cantO,
-      List<String?> foto,
+      String foto,
       String datoUnico,
       String nomUser,
+      String lastUpdated,
       int idTiend) async {
     final connection = await _getConnection();
     try {
-      String urlsString =
-          foto.map((url) => "'$url'").join(','); // Unir las URLs con comas
       // Validación de parámetros
       if (valorDepartamento.isEmpty || valorUbicacion.isEmpty || idTiend <= 0) {
         throw ArgumentError(
@@ -197,8 +197,8 @@ class DatabaseHelper {
 
       // Realizar la inserción en la base de datos utilizando una sentencia preparada
       await connection.query(
-        'INSERT INTO reporte (formato, nom_dep, clave_ubi, id_probl, nom_probl, id_mat, nom_mat, otro, cant_mat, id_obr, nom_obr, otro_obr, cant_obr, foto, dato_unico, nom_user, id_tienda)'
-        'VALUES (@formato, @valorDepartamento, @valorUbicacion, @idProbl, @nomProbl, @idMat, @nomMat, @otro, @cantM, @idObra, @nomObr, @otroObr, @cantO, (ARRAY[$urlsString]), @datoUnico, @nom_user, @idTiend)',
+        'INSERT INTO reportes (formato, nom_dep, clave_ubi, id_probl, nom_probl, id_mat, nom_mat, otro, cant_mat, id_obr, nom_obr, otro_obr, cant_obr, foto, dato_unico, nom_user, last_updated, id_tienda)'
+        'VALUES (@formato, @valorDepartamento, @valorUbicacion, @idProbl, @nomProbl, @idMat, @nomMat, @otro, @cantM, @idObra, @nomObr, @otroObr, @cantO, @foto, @datoUnico, @nomUser, @lastUpdated, @idTiend)',
         substitutionValues: {
           'formato': formato,
           'valorDepartamento': valorDepartamento,
@@ -213,12 +213,26 @@ class DatabaseHelper {
           'nomObr': nomObr,
           'otroObr': otroObr,
           'cantO': cantO,
-          'foto': urlsString,
+          'foto': foto,
           'datoUnico': datoUnico,
-          'nom_user': nomUser,
+          'nomUser': nomUser,
+          'lastUpdated': lastUpdated,
           'idTiend': idTiend,
         },
       );
+      print("DATOS DE MI BD $formato");
+      print("DATOS DE MI BD $valorDepartamento");
+      print("DATOS DE MI BD $valorUbicacion");
+      print("DATOS DE MI BD $idProbl");
+      print("DATOS DE MI BD $nomProbl");
+      print("DATOS DE MI BD $idMat");
+      print("DATOS DE MI BD $nomMat");
+      print("DATOS DE MI BD $otro");
+      print("DATOS DE MI BD $cantM");
+      print("DATOS DE MI BD $idObra");
+      print("DATOS DE MI BD $nomObr");
+      print("DATOS DE MI BD $otroObr");
+
       if (kDebugMode) {
         print("CONSULTA INSERTADA CORRECTAMENTE");
       }
@@ -267,14 +281,14 @@ class DatabaseHelper {
     final connection = await _getConnection();
     try {
       final results = await connection.query(
-          "SELECT * FROM reporte WHERE id_tienda = $idtienda AND formato = 'F1' ");
+          "SELECT * FROM reporte WHERE id_tienda = $idtienda AND formato = 'F1' ORDER BY id_rep, dato_unico");
       final List<Map<String, dynamic>> mappedResults = results
           .map((row) => Map<String, dynamic>.from(row.toColumnMap()))
           .toList();
       print(results);
       return mappedResults;
     } catch (e) {
-      const Text('Comprueba tu conexión a intrnet');
+      const Text('Comprueba tu conexión a internet');
       return [];
     } finally {
       try {
@@ -313,7 +327,7 @@ class DatabaseHelper {
   }
 
   static Future<void> editarReporte(
-    String idReporte,
+    int idReporte,
     String formato,
     String valorDepartamento,
     String valorUbicacion,
@@ -342,8 +356,8 @@ class DatabaseHelper {
       }
       // Realizar la actualización en la base de datos utilizando una sentencia preparada
       await connection.query(
-        'UPDATE reporte SET formato = @formato, nom_dep = @valorDepartamento, clave_ubi = @valorUbicacion, '
-        'id_probl = @idProbl, nom_probl = @nomProbl, id_mat = @idMat, nom_mat = nomMat, otro = otro, cant_mat = @cantM, id_obr = @idObra, nom_obr = @nomObr, otro_obr = @otroObr,'
+        'UPDATE reporte SET formato = @formato, nom_dep = @valorDepartamento, clave_ubi = @valorUbicacion,'
+        'id_probl = @idProbl, nom_probl = @nomProbl, id_mat = @idMat, nom_mat = @nomMat, otro = @otro, cant_mat = @cantM, id_obr = @idObra, nom_obr = @nomObr, otro_obr = @otroObr,'
         'cant_obr = @cantO, id_tienda = @idTiend WHERE id_rep = @idReporte',
         substitutionValues: {
           'idReporte': idReporte,
@@ -511,5 +525,79 @@ class DatabaseHelper {
       }
       rethrow;
     }
+  }
+
+  //soncronizar con bd local
+  static Future<void> sincronizarConPostgreSQL(List<Reporte> reportes) async {
+    // Establecer la conexión a la base de datos PostgreSQL
+    final connection = await _getConnection();
+
+    // Iterar sobre los reportes y realizar la inserción o actualización en PostgreSQL
+    for (final reporte in reportes) {
+      int id = reporte.idRep;
+      print("id de reportes $id");
+
+      // Comprobar si el reporte ya existe en PostgreSQL (por ejemplo, utilizando su identificador único)
+      final existe = await connection.query(
+          'SELECT COUNT(*) FROM reportes WHERE id_rep = @id',
+          substitutionValues: {'id': id});
+
+      if (existe != null) {
+        print("EXISTEN DATOS $existe");
+        // Actualizar el reporte en PostgreSQL
+        //nom_user TEXT NOT NULL, lastUpdated DATETIME, id_tienda INTEGER NOT NULL,"
+
+        await connection.execute(
+          'UPDATE reportes SET formato = @formato, nom_dep = @valorDepartamento, clave_ubi = @valorUbicacion,'
+          'id_probl = @idProbl, nom_probl = @nomProbl, id_mat = @idMat, nom_mat = @nomMat, otro = @otro, cant_mat = @cantM, id_obr = @idObra, nom_obr = @nomObr, otro_obr = @otroObr,'
+          'cant_obr = @cantO, nom_user = @nomUser, last_updated = @lastUpdated, id_tienda = @idTiend WHERE id_rep = @id',
+          substitutionValues: {
+            'id': id,
+            'formato': reporte.formato,
+            'valorDepartamento': reporte.nomDep,
+            'valorUbicacion': reporte.claveUbi,
+            'idProbl': reporte.idProbl,
+            'nomProbl': reporte.nomProbl,
+            'idMat': reporte.idMat,
+            'nomMat': reporte.nomMat,
+            'otro': reporte.otro,
+            'cantM': reporte.cantMat,
+            'idObra': reporte.idObr,
+            'nomObr': reporte.nomObr,
+            'otroObr': reporte.otroObr,
+            'cantO': reporte.cantObr,
+            'nomUser': reporte.nombUser,
+            'lastUpdated': reporte.lastUpdated,
+            'idTiend': reporte.idTienda,
+          },
+        );
+        print("datos actualizados correctamente");
+      } else {
+        // Insertar el reporte en PostgreSQL
+        await insertarReporte(
+            reporte.formato,
+            reporte.nomDep,
+            reporte.claveUbi,
+            reporte.idProbl,
+            reporte.nomProbl,
+            reporte.idMat,
+            reporte.nomMat,
+            reporte.otro,
+            reporte.cantMat,
+            reporte.idObr,
+            reporte.nomObr,
+            reporte.otroObr,
+            reporte.cantObr,
+            reporte.foto,
+            reporte.datoU,
+            reporte.nombUser,
+            reporte.lastUpdated,
+            reporte.idTienda);
+        print("datos insertados correctamente");
+      }
+    }
+
+    // Cerrar la conexión a la base de datos PostgreSQL
+    //await connection.close();
   }
 }

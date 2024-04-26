@@ -1,8 +1,14 @@
+import 'dart:async';
 import 'dart:io';
+import 'package:app_inspections/models/mano_obra.dart';
+import 'package:app_inspections/models/materiales.dart';
+import 'package:app_inspections/models/problemas.dart';
+import 'package:app_inspections/models/reporte_model.dart';
+import 'package:app_inspections/services/db_offline.dart';
 import 'package:app_inspections/services/photo_services.dart';
+import 'package:app_inspections/src/pages/utils/check_internet_connection.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:app_inspections/services/auth_service.dart';
-import 'package:app_inspections/services/db.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -50,6 +56,15 @@ class MyForm extends StatefulWidget {
 }
 
 class _MyFormState extends State<MyForm> {
+  //verificar la conexion a internet
+  late final CheckInternetConnection _internetConnection;
+  late StreamSubscription<ConnectionStatus> _connectionSubscription;
+  ConnectionStatus _currentStatus = ConnectionStatus.online;
+
+  List<Materiales> materiales = [];
+  List<Problemas> problemas = [];
+  List<Obra> obra = [];
+
   final int idTienda;
   @override
   final BuildContext context;
@@ -57,6 +72,14 @@ class _MyFormState extends State<MyForm> {
   List<Map<String, dynamic>> datosIngresados = [];
   List<XFile> images = [];
   int maxPhotos = 6;
+
+  cargaProblemas() async {
+    List<Problemas> auxProblema = await DatabaseProvider.showProblemas();
+
+    setState(() {
+      problemas = auxProblema;
+    });
+  }
 
   //Campos de mi formulario
   final TextEditingController _departamentoController = TextEditingController();
@@ -95,6 +118,14 @@ class _MyFormState extends State<MyForm> {
   @override
   void initState() {
     super.initState();
+    _internetConnection = CheckInternetConnection();
+    _connectionSubscription =
+        _internetConnection.internetStatus().listen((status) {
+      setState(() {
+        _currentStatus = status;
+      });
+    });
+    cargaProblemas();
     _focusNodeProbl.addListener(() {
       if (!_focusNodeProbl.hasFocus) {
         setState(() {
@@ -119,6 +150,13 @@ class _MyFormState extends State<MyForm> {
         });
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _connectionSubscription.cancel();
+    _internetConnection.close();
+    super.dispose();
   }
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
@@ -288,14 +326,10 @@ class _MyFormState extends State<MyForm> {
         String datoUnico = generateUniqueId();
         String formatoSel = "";
 
-        if (formato.isEmpty && selectedFormato.isNotEmpty) {
-          formatoSel = selectedFormato;
-        } else if (selectedFormato.isEmpty && formato.isNotEmpty) {
-          formatoSel = formato;
-        }
-
-        for (var datos in datosIngresados) {
+        for (final datos in datosIngresados) {
           // Usar un valor predeterminado si el valor es nulo
+
+          formato = datos['Formato'] ?? '';
           valorDepartamento = datos['Departamento'] ?? '';
           valorUbicacion = datos['Ubicacion'] ?? '';
           idProbl = datos['ID_Problema'] ?? 0;
@@ -303,23 +337,47 @@ class _MyFormState extends State<MyForm> {
           idMat = datos['ID_Material'] ?? 0;
           nomMat = datos['Material'] ?? '';
           otro = datos['Otro'] ?? 0;
-          cantidadM = datos['Cantidad_Material'] ?? 0;
+          cantidadM = datos['Cantidad_Material'] ?? '';
           idObra = datos['ID_Obra'] ?? 0;
           nomObra = datos['Obra'] ?? '';
           otroO = datos['Otro_Obr'] ?? 0;
-          cantidadO = datos['Cantidad_Obra'] ?? 0;
+          cantidadO = datos['Cantidad_Obra'] ?? ' ';
           fotos = datos['Foto'] ?? 0;
+          String fotosString = fotos.join(
+              ','); // Concatenar las URLs de las fotos en una sola cadena separada por comas
 
           if (cantidadM.isNotEmpty) {
-            cantM = int.parse(cantidadM);
+            cantM = int.tryParse(cantidadM) ?? 0;
           }
 
           if (cantidadO.isNotEmpty) {
-            cantO = int.parse(cantidadO);
+            cantO = int.tryParse(cantidadO) ?? 0;
           }
 
+          Reporte nuevoReporte = Reporte(
+            idRep: 0,
+            formato: formato,
+            nomDep: valorDepartamento,
+            claveUbi: valorUbicacion,
+            idProbl: idProbl,
+            nomProbl: nomProbl,
+            idMat: idMat,
+            nomMat: nomMat,
+            otro: otro,
+            cantMat: cantM,
+            idObr: idObra,
+            nomObr: nomObra,
+            otroObr: otroO,
+            cantObr: cantO,
+            foto: fotosString, // Debes manejar la lógica para las fotos aquí
+            datoU: datoUnico,
+            nombUser: nomUser!, // Aquí debes establecer el nombre del usuario
+            lastUpdated: DateTime.now().toIso8601String(),
+            idTienda: idTiend, // Aquí debes establecer el ID de la tienda
+          );
+
           print("DATOS DEL ARREGLO");
-          print("FORMATO $formatoSel");
+          print("FORMATO $formato");
           print("DEPARTAMENTO $valorDepartamento");
           print("UBICACION $valorUbicacion");
           print("ID PROBLEMA $idProbl");
@@ -337,10 +395,12 @@ class _MyFormState extends State<MyForm> {
           print("USUARIO $nomUser");
           print("ID TIENDA $idTiend");
 
-          DatabaseHelper.insertarReporte(
-            formatoSel,
+          DatabaseProvider.insertReporte(nuevoReporte);
+
+          /* DatabaseHelper.insertarReporte(
+            formato, 
             valorDepartamento,
-            valorUbicacion,
+            valorUbicacion, 
             idProbl,
             nomProbl,
             idMat,
@@ -349,16 +409,18 @@ class _MyFormState extends State<MyForm> {
             cantM,
             idObra,
             nomObra,
-            otroO,
+            otroO, 
             cantO,
             fotos,
             datoUnico,
             nomUser!,
             idTiend,
-          );
+          ); */
+
+          //DatabaseProvider.insertReporte(datos);
         }
 
-        DatabaseHelper.insertarImagenes(fotos, datoUnico, idTiend);
+        /* DatabaseHelper.insertarImagenes(fotos, datoUnico, idTiend); */
 
         _save();
         datosIngresados.clear();
@@ -473,9 +535,9 @@ class _MyFormState extends State<MyForm> {
   @override
   Widget build(BuildContext context) {
     idTiend = idTienda;
-    List<Map<String, dynamic>> resultadosP = [];
-    List<Map<String, dynamic>> resultadosM = [];
-    List<Map<String, dynamic>> resultadosO = [];
+    List<Problemas> resultadosP = [];
+    List<Materiales> resultadosM = [];
+    List<Obra> resultadosO = [];
     final authService = Provider.of<AuthService>(context, listen: false);
     nomUser = authService.currentUser;
     //print("usuariooo $nomUser");
@@ -488,7 +550,7 @@ class _MyFormState extends State<MyForm> {
     bool masDeUnaFoto = images.length > 1;
 
     bool activarCampos = contieneTornillo || masDeUnaFoto;
-
+    // if (_currentStatus == ConnectionStatus.offline) {
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 30),
@@ -520,6 +582,7 @@ class _MyFormState extends State<MyForm> {
                 TextFormField(
                   controller: _departamentoController,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
+                  decoration: const InputDecoration(labelText: 'Departamento'),
                   validator: (value) {
                     if (_departamentoController.text.isEmpty &&
                         _departamentoController.text.isNotEmpty) {
@@ -527,7 +590,6 @@ class _MyFormState extends State<MyForm> {
                     }
                     return null;
                   },
-                  decoration: const InputDecoration(labelText: 'Departamento'),
                 ),
                 TextFormField(
                   controller: _ubicacionController,
@@ -548,29 +610,30 @@ class _MyFormState extends State<MyForm> {
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: _textEditingControllerProblema,
                   onChanged: (String value) async {
-                    resultadosP = await DatabaseHelper.mostrarProblemas(value);
+                    resultadosP = await DatabaseProvider.showProblemas();
                     idProbl = 0;
                     setState(() {
                       showListProblemas = value.isNotEmpty;
                       // Utiliza la variable resultados directamente
                       filteredOptionsProblema = resultadosP
                           .where((opcion) =>
-                              opcion['cod_probl']
+                              opcion.codigo
                                   .toLowerCase()
                                   .contains(value.toLowerCase()) ||
-                              opcion['nom_probl']
+                              opcion.nombre
                                   .toLowerCase()
                                   .contains(value.toLowerCase()))
                           .map((opcion) {
                         // Guarda el ID en la variable externa
                         // Establecer como null por defecto
                         if (showListProblemas) {
-                          idProbl = opcion['id_probl'];
-                          formato = opcion['formato'];
-                          //print("formato de la seleccion $formato");
+                          idProbl = opcion.id!;
+                          formato = opcion.formato;
+                          print("formato de la seleccion $formato");
                         }
 
-                        String textoProblema = '${opcion['nom_probl']}';
+                        String textoProblema = opcion.nombre;
+                        print("problema $textoProblema");
                         return '$textoProblema|id:$idProbl|formato:$formato';
                       }).toList();
                     });
@@ -586,6 +649,7 @@ class _MyFormState extends State<MyForm> {
                                 isProblemSelected = false;
                                 showListProblemas =
                                     true; // Muestra la lista nuevamente al eliminar la opción
+                                print("VISIBILIDAD ONE $showListProblemas");
                               });
                             },
                           )
@@ -609,10 +673,11 @@ class _MyFormState extends State<MyForm> {
                       height: 200,
                       child: ListView.builder(
                         itemCount: filteredOptionsProblema.length,
-                        itemBuilder: (context, index) {
+                        itemBuilder: (context, i) {
+                          print("VISIBILIDAD $showListProblemas");
                           // Divide el texto del problema y el ID del problema
                           List<String> partes =
-                              filteredOptionsProblema[index].split('|');
+                              filteredOptionsProblema[i].split('|');
                           print("PARTES DE LA SELECCIÓN $partes");
                           String textoProblema = partes[0];
                           int idProblema = int.parse(
@@ -623,6 +688,7 @@ class _MyFormState extends State<MyForm> {
                             title: Text(textoProblema),
                             onTap: () {
                               int idProblemaSeleccionado = idProblema;
+                              print("ID PROBLEMA $idProblemaSeleccionado");
                               handleSelectionProblem(textoProblema,
                                   idProblemaSeleccionado, textoFormato);
                               showListProblemas = false;
@@ -656,22 +722,22 @@ class _MyFormState extends State<MyForm> {
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: _textEditingControllerMaterial,
                   onChanged: (String value) async {
-                    resultadosM = await DatabaseHelper.mostrarMateriales(value);
+                    resultadosM = await DatabaseProvider.showMateriales();
                     idMat = 0;
                     setState(() {
                       showListMaterial = value.isNotEmpty;
                       // Utiliza la variable resultados directamente
                       filteredOptionsMaterial = resultadosM
-                          .where((opcion) => opcion['nom_mat']
+                          .where((opcion) => opcion.nombre
                               .toLowerCase()
                               .contains(value.toLowerCase()))
                           .map((opcion) {
                         // Guarda el ID en la variable externa
                         if (showListMaterial) {
-                          idMat = opcion['id_mat'];
+                          idMat = opcion.id!;
                         }
                         // Retorna el texto para mostrar en la lista
-                        String textoMaterial = '${opcion['nom_mat']}';
+                        String textoMaterial = opcion.nombre;
                         return '$textoMaterial|id:$idMat';
                       }).toList();
                     });
@@ -715,6 +781,7 @@ class _MyFormState extends State<MyForm> {
                               filteredOptionsMaterial[index].split('|id:');
                           String textoMaterial = partes[0];
                           int idMaterial = int.parse(partes[1]);
+                          print("MATERIALESS $partes");
                           return ListTile(
                             title: Text(textoMaterial),
                             onTap: () {
@@ -775,7 +842,7 @@ class _MyFormState extends State<MyForm> {
                     scrollDirection: Axis.horizontal,
                     itemCount: images.length,
                     itemBuilder: (context, index) {
-                      return _buildThumbnailWithCancel(images[index],
+                      return buildThumbnailWithCancel(images[index],
                           index); // Usa la función para construir miniaturas con botón de cancelar
                     },
                   ),
@@ -831,21 +898,21 @@ class _MyFormState extends State<MyForm> {
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: _textEditingControllerObra,
                   onChanged: (String value) async {
-                    resultadosO = await DatabaseHelper.mostrarObra(value);
+                    resultadosO = await DatabaseProvider.showObra();
                     idObra = 0;
                     setState(() {
                       showListObra = value.isNotEmpty;
                       filteredOptionsObra = resultadosO
-                          .where((opcion) => opcion['nom_obr']
+                          .where((opcion) => opcion.nombre
                               .toLowerCase()
                               .contains(value.toLowerCase()))
                           .map((opcion) {
                         // Guarda el ID en la variable externa
                         if (showListObra) {
-                          idObra = opcion['id_obr'];
+                          idObra = opcion.id!;
                         }
                         // Retorna el texto para mostrar en la lista
-                        String textoObra = '${opcion['nom_obr']}';
+                        String textoObra = opcion.nombre;
                         return '$textoObra|id:$idObra';
                       }).toList();
                     });
@@ -1076,7 +1143,7 @@ class _MyFormState extends State<MyForm> {
                 ElevatedButton(
                   onPressed: isGuardarHabilitado
                       ? () {
-                          guardarDatosConConfirmacion(context);
+                          //guardarDatosConConfirmacion(context);
                         }
                       : null, // Desactiva el botón si isGuardarHabilitado es falso
                   key: null,
@@ -1097,9 +1164,17 @@ class _MyFormState extends State<MyForm> {
         ),
       ),
     );
+    /* } else {
+      // Si no hay conexión a Internet, mostrar el widget de No Internet
+      return const Scaffold(
+        body: Center(
+          child: NoInternet(), // Usar el widget NoInternetWidget
+        ),
+      );
+    } */
   }
 
-  void _mostrarFotoEnGrande(XFile image) {
+  void mostrarFotoEnGrande(XFile image) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -1154,10 +1229,10 @@ class _MyFormState extends State<MyForm> {
   }
 
 //permitir al usuario ver la imagen en grande
-  Widget _buildThumbnailWithCancel(XFile image, int index) {
+  Widget buildThumbnailWithCancel(XFile image, int index) {
     return GestureDetector(
       onTap: () {
-        _mostrarFotoEnGrande(image);
+        mostrarFotoEnGrande(image);
       },
       child: Stack(
         children: [
