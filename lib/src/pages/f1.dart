@@ -162,7 +162,8 @@ class _MyFormState extends State<MyForm> {
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final ImagePicker _picker = ImagePicker();
-  String imagePaths = ""; // Lista para almacenar las rutas de las imágenes
+  List<String> imagePaths =
+      []; // Lista para almacenar las rutas de las imágenes
 
   final TextEditingController _textEditingControllerProblema =
       TextEditingController();
@@ -221,10 +222,10 @@ class _MyFormState extends State<MyForm> {
       final File imageFile = File(imagePath);
       await imageFile.writeAsBytes(await image.readAsBytes());
 
-      // Asignar la ruta de la imagen al campo "foto" en el modelo Reporte
-      Reporte reporte = Reporte(foto: imagePath);
-      print("IMAGENNN: $reporte");
-      imagePaths = imagePath;
+      // Agregar la ruta de la imagen a la lista
+      setState(() {
+        imagePaths.add(imagePath);
+      });
     }
   }
 
@@ -347,7 +348,7 @@ class _MyFormState extends State<MyForm> {
           otroO = datos['Otro_Obr'] ?? 0;
           cantidadO = datos['Cantidad_Obra'] ?? ' ';
           fotos = datos['Foto'] ?? 0;
-          String fotosString = fotos.join(
+          String fotosString = imagePaths.join(
               ','); // Concatenar las URLs de las fotos en una sola cadena separada por comas
 
           if (cantidadM.isNotEmpty) {
@@ -372,7 +373,7 @@ class _MyFormState extends State<MyForm> {
             nomObr: nomObra,
             otroObr: otroO,
             cantObr: cantO,
-            foto: imagePaths, // Debes manejar la lógica para las fotos aquí
+            foto: fotosString, // Debes manejar la lógica para las fotos aquí
             datoU: datoUnico,
             nombUser: nomUser!, // Aquí debes establecer el nombre del usuario
             lastUpdated: DateTime.now().toIso8601String(),

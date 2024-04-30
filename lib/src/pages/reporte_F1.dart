@@ -23,8 +23,8 @@ class ReporteF1Screen extends StatelessWidget {
       : super(key: key);
 
   Future<List<Reporte>> _cargarReporte(int idTienda) async {
-    DatabaseProvider databaseProvider = DatabaseProvider();
-    return databaseProvider.mostrarReporteF1(idTienda);
+    //DatabaseProvider databaseProvider = DatabaseProvider();
+    return DatabaseProvider.mostrarReporteF1(idTienda);
   }
 
   void _descargarPDF(BuildContext context, String? user) async {
@@ -293,8 +293,8 @@ class _ReporteWidgetState extends State<ReporteF1Widget> {
   }
 
   Future<List<Reporte>> _cargarReporte(int idTienda) async {
-    DatabaseProvider databaseProvider = DatabaseProvider();
-    return databaseProvider.mostrarReporteF1(idTienda);
+    //DatabaseProvider databaseProvider = DatabaseProvider();
+    return DatabaseProvider.mostrarReporteF1(idTienda);
   }
 
   @override
@@ -374,6 +374,7 @@ class _ReporteWidgetState extends State<ReporteF1Widget> {
                   ],
                   rows: datos.map((dato) {
                     datounico = dato.datoU!;
+                    print("FOTOOOO ${dato.foto}");
                     return DataRow(
                       cells: [
                         DataCell(
@@ -430,7 +431,8 @@ class _ReporteWidgetState extends State<ReporteF1Widget> {
                           SizedBox(
                             width: 500,
                             child: Row(
-                              children: [dato.foto].map<Widget>((url) {
+                              children:
+                                  dato.foto!.split(",").map<Widget>((url) {
                                 return Padding(
                                   padding: const EdgeInsets.all(4),
                                   child: InkWell(
@@ -439,22 +441,28 @@ class _ReporteWidgetState extends State<ReporteF1Widget> {
                                       showDialog(
                                         context: context,
                                         builder: (context) => AlertDialog(
-                                          content: Image.network(
-                                            url ??
-                                                '', // Elimina espacios en blanco
+                                          content: Image.file(
+                                            File(url
+                                                .trim()), // Elimina espacios en blanco y carga la imagen
                                             errorBuilder:
                                                 (context, error, stackTrace) {
                                               // Manejar el error y mostrar una imagen de respaldo
                                               return Image.asset(
-                                                  'assets/no_image.png');
+                                                'assets/no_image.png',
+                                                width: 70,
+                                                height: 70,
+                                              );
                                             },
-                                            fit: BoxFit.contain,
+                                            width: 70,
+                                            height: 70,
+                                            fit: BoxFit.cover,
                                           ),
                                         ),
                                       );
                                     },
-                                    child: Image.network(
-                                      url ?? '', // Elimina espacios en blanco
+                                    child: Image.file(
+                                      File(url
+                                          .trim()), // Elimina espacios en blanco y carga la imagen
                                       errorBuilder:
                                           (context, error, stackTrace) {
                                         // Manejar el error y mostrar una imagen de respaldo
@@ -464,6 +472,9 @@ class _ReporteWidgetState extends State<ReporteF1Widget> {
                                           height: 70,
                                         );
                                       },
+                                      width: 70,
+                                      height: 70,
+                                      fit: BoxFit.cover,
                                     ),
                                   ),
                                 );

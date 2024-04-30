@@ -250,12 +250,12 @@ class DatabaseProvider {
     }
   }
 
-  Future<List<Reporte>> mostrarReporteF1(int idtienda) async {
+  static Future<List<Reporte>> mostrarReporteF1(int idtienda) async {
     Database database = await openDB();
     try {
       final List<Map<String, dynamic>> results = await database.rawQuery(
-        "SELECT * FROM reporte WHERE id_tienda LIKE ? AND formato = 'F1'",
-        ['%$idtienda%'],
+        "SELECT * FROM reporte WHERE id_tienda = ? AND formato = 'F1'",
+        [idtienda],
       );
       //print('despues de la consulta');
       if (kDebugMode) {

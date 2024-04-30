@@ -39,6 +39,8 @@ void main() async {
   //llamar a la funcion para insertar datos iniciales de usuarios
   insertInitialDataUser();
 
+  DatabaseProvider.mostrarReporteF1(0);
+
   dbHelper = DatabaseHelper();
 
   runApp(AppState(
