@@ -8,13 +8,13 @@ import 'package:postgres/postgres.dart';
 class DatabaseHelper {
   final storage = const FlutterSecureStorage();
 
-  static Future<PostgreSQLConnection> _getConnection() async {
+  /* static Future<PostgreSQLConnection> _getConnection() async {
     return await AuthService().openConnection();
-  }
+  } */
 
   static PostgreSQLConnection? connection;
 
-  static Future<PostgreSQLConnection> openConnection() async {
+  static Future<PostgreSQLConnection> _openConnection() async {
     try {
       const databaseHost =
           'ep-red-wood-a4nzhmfu-pooler.us-east-1.postgres.vercel-storage.com';
@@ -42,7 +42,7 @@ class DatabaseHelper {
   }
 
   static Future<List<Map<String, dynamic>>> mostrarTiendas() async {
-    final connection = await _getConnection();
+    final connection = await _openConnection();
     try {
       //print('Antes de la consulta');
       final results = await connection.query('SELECT * FROM tiendas');
@@ -71,7 +71,7 @@ class DatabaseHelper {
   }
 
   static Future<List<Map<String, dynamic>>> searchTiendas(String query) async {
-    final connection = await _getConnection();
+    final connection = await _openConnection();
     try {
       final results = await connection.query(
         'SELECT * FROM tiendas WHERE cod_tienda ILIKE @query OR nom_tienda ILIKE @query_nom',
@@ -98,7 +98,7 @@ class DatabaseHelper {
 
   static Future<List<Map<String, dynamic>>> mostrarProblemas(
       String query) async {
-    final connection = await _getConnection();
+    final connection = await _openConnection();
     try {
       final results = await connection.query('SELECT * FROM problemas');
       final List<Map<String, dynamic>> mappedResults = results
@@ -123,7 +123,7 @@ class DatabaseHelper {
 
   static Future<List<Map<String, dynamic>>> mostrarMateriales(
       String query) async {
-    final connection = await _getConnection();
+    final connection = await _openConnection();
     try {
       final results = await connection.query('SELECT * FROM materiales');
       final List<Map<String, dynamic>> mappedResults = results
@@ -146,7 +146,7 @@ class DatabaseHelper {
   }
 
   static Future<List<Map<String, dynamic>>> mostrarObra(String query) async {
-    final connection = await _getConnection();
+    final connection = await _openConnection();
     try {
       final results = await connection.query('SELECT * FROM obra');
       final List<Map<String, dynamic>> mappedResults = results
@@ -187,7 +187,7 @@ class DatabaseHelper {
       String nomUser,
       String lastUpdated,
       int idTiend) async {
-    final connection = await _getConnection();
+    final connection = await _openConnection();
     try {
       // Validación de parámetros
       if (valorDepartamento.isEmpty || valorUbicacion.isEmpty || idTiend <= 0) {
@@ -247,7 +247,7 @@ class DatabaseHelper {
 
   Future<List<Map<String, dynamic>>> mostrarReporte(int idtienda) async {
     //print("ID TIENDA EN CONSULTA $idtienda");
-    final connection = await _getConnection();
+    final connection = await _openConnection();
     try {
       //print('Antes de la consulta');
       final results = await connection
@@ -278,7 +278,7 @@ class DatabaseHelper {
   }
 
   Future<List<Map<String, dynamic>>> mostrarReporteF1(int idtienda) async {
-    final connection = await _getConnection();
+    final connection = await _openConnection();
     try {
       final results = await connection.query(
           "SELECT * FROM reporte WHERE id_tienda = $idtienda AND formato = 'F1' ORDER BY id_rep, dato_unico");
@@ -303,7 +303,7 @@ class DatabaseHelper {
   }
 
   Future<List<Map<String, dynamic>>> mostrarReporteF2(int idtienda) async {
-    final connection = await _getConnection();
+    final connection = await _openConnection();
     try {
       final results = await connection.query(
           "SELECT * FROM reporte WHERE id_tienda = $idtienda AND formato = 'F2' ");
@@ -343,7 +343,7 @@ class DatabaseHelper {
     int cantO,
     int idTiend,
   ) async {
-    final connection = await _getConnection();
+    final connection = await _openConnection();
     try {
       // Validación de parámetros
       if (valorDepartamento.isEmpty ||
@@ -388,7 +388,7 @@ class DatabaseHelper {
 
   Future<Map<String, dynamic>> obtenerDefectoPorId(int idDefecto) async {
     try {
-      final connection = await _getConnection();
+      final connection = await _openConnection();
 
       // Realiza la consulta en tu tabla de problemas utilizando el ID proporcionado
       List<Map<String, Map<String, dynamic>>> resultados =
@@ -418,7 +418,7 @@ class DatabaseHelper {
 
   Future<Map<String, dynamic>> obtenerMaterialPorId(int idMaterial) async {
     try {
-      final connection = await _getConnection();
+      final connection = await _openConnection();
 
       // Realiza la consulta en tu tabla de problemas utilizando el ID proporcionado
       List<Map<String, Map<String, dynamic>>> resultados =
@@ -448,7 +448,7 @@ class DatabaseHelper {
 
   Future<Map<String, dynamic>> obtenerObraPorId(int idObra) async {
     try {
-      final connection = await _getConnection();
+      final connection = await _openConnection();
 
       // Realiza la consulta en tu tabla de problemas utilizando el ID proporcionado
       List<Map<String, Map<String, dynamic>>> resultados =
@@ -477,7 +477,7 @@ class DatabaseHelper {
   }
 
   Future<List<Map<String, dynamic>>> mostrarCantidades(int idtienda) async {
-    final connection = await _getConnection();
+    final connection = await _openConnection();
     try {
       final results = await connection.query(
           "SELECT nom_mat, SUM(cant_mat) as cantidad_total FROM reporte WHERE id_tienda = $idtienda GROUP BY nom_mat");
@@ -502,7 +502,7 @@ class DatabaseHelper {
 
   static Future<void> insertarImagenes(
       List<String?> fotos, String datoUnico, int idTienda) async {
-    final connection = await _getConnection();
+    final connection = await _openConnection();
 
     try {
       for (var foto in fotos) {
@@ -529,18 +529,18 @@ class DatabaseHelper {
 
   //soncronizar con bd local
   static Future<void> sincronizarConPostgreSQL(List<Reporte> reportes) async {
-    // Establecer la conexión a la base de datos PostgreSQL
-    final connection = await _getConnection();
+    /*  // Establecer la conexión a la base de datos PostgreSQL
+    final connection = await _openConnection();
 
     // Iterar sobre los reportes y realizar la inserción o actualización en PostgreSQL
     for (final reporte in reportes) {
-      int id = reporte.idRep;
-      print("id de reportes $id");
+      //int id = reporte.idRep;
+      /* print("id de reportes $id");
 
       // Comprobar si el reporte ya existe en PostgreSQL (por ejemplo, utilizando su identificador único)
       final existe = await connection.query(
           'SELECT COUNT(*) FROM reportes WHERE id_rep = @id',
-          substitutionValues: {'id': id});
+          substitutionValues: {'id': id}); */
 
       if (existe != null) {
         print("EXISTEN DATOS $existe");
@@ -552,7 +552,6 @@ class DatabaseHelper {
           'id_probl = @idProbl, nom_probl = @nomProbl, id_mat = @idMat, nom_mat = @nomMat, otro = @otro, cant_mat = @cantM, id_obr = @idObra, nom_obr = @nomObr, otro_obr = @otroObr,'
           'cant_obr = @cantO, nom_user = @nomUser, last_updated = @lastUpdated, id_tienda = @idTiend WHERE id_rep = @id',
           substitutionValues: {
-            'id': id,
             'formato': reporte.formato,
             'valorDepartamento': reporte.nomDep,
             'valorUbicacion': reporte.claveUbi,
@@ -575,29 +574,30 @@ class DatabaseHelper {
       } else {
         // Insertar el reporte en PostgreSQL
         await insertarReporte(
-            reporte.formato,
-            reporte.nomDep,
-            reporte.claveUbi,
-            reporte.idProbl,
-            reporte.nomProbl,
-            reporte.idMat,
-            reporte.nomMat,
-            reporte.otro,
-            reporte.cantMat,
-            reporte.idObr,
-            reporte.nomObr,
-            reporte.otroObr,
-            reporte.cantObr,
-            reporte.foto,
-            reporte.datoU,
-            reporte.nombUser,
-            reporte.lastUpdated,
-            reporte.idTienda);
+            reporte.formato!,
+            reporte.nomDep!,
+            reporte.claveUbi!,
+            reporte.idProbl!,
+            reporte.nomProbl!,
+            reporte.idMat!,
+            reporte.nomMat!,
+            reporte.otro!,
+            reporte.cantMat!,
+            reporte.idObr!,
+            reporte.nomObr!,
+            reporte.otroObr!,
+            reporte.cantObr!,
+            reporte.foto!,
+            reporte.datoU!,
+            reporte.nombUser!,
+            reporte.lastUpdated!,
+            reporte.idTienda!);
         print("datos insertados correctamente");
       }
     }
 
     // Cerrar la conexión a la base de datos PostgreSQL
     //await connection.close();
+  } */
   }
 }

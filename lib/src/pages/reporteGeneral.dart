@@ -37,8 +37,6 @@ class ReporteScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authService = Provider.of<AuthService>(context, listen: false);
-    String? user = authService.currentUser;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -184,15 +182,6 @@ Future<File> generatePDF(
           padding: const pdfWidgets.EdgeInsets.all(40),
           child: pdfWidgets.Stack(
             children: [
-              /* pdfWidgets.Positioned(
-                right: 0,
-                top: 0,
-                child: pdfWidgets.Container(
-                  margin: const pdfWidgets.EdgeInsets.all(5),
-                  child: pdfWidgets.Image(pdfWidgets.MemoryImage(imageData)),
-                  width: 100, // Ancho de la imagen
-                ),
-              ), */
               // Agrega el contenido del PDF
               pdfWidgets.Column(
                 crossAxisAlignment: pdfWidgets.CrossAxisAlignment.center,

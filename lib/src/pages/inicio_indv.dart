@@ -6,7 +6,6 @@ import 'package:app_inspections/src/pages/editar_form.dart';
 import 'package:app_inspections/src/pages/reporteGeneral.dart';
 import 'package:app_inspections/src/pages/reporte_F1.dart';
 import 'package:app_inspections/src/pages/reporte_F2.dart';
-import 'package:app_inspections/src/pages/utils/check_internet_connection.dart';
 import 'package:flutter/material.dart';
 
 class InicioScreen extends StatelessWidget {
@@ -51,40 +50,17 @@ class Inicio extends StatefulWidget {
 
 class _InicioState extends State<Inicio> {
   List<Reporte> reporte = [];
-  //verificar la conexion a internet
-  late final CheckInternetConnection _internetConnection;
-  late StreamSubscription<ConnectionStatus> _connectionSubscription;
-  ConnectionStatus _currentStatus = ConnectionStatus.online;
 
   final TextEditingController _searchController = TextEditingController();
   String _searchText = '';
 
   @override
-  void initState() {
-    super.initState();
-    _internetConnection = CheckInternetConnection();
-    _connectionSubscription =
-        _internetConnection.internetStatus().listen((status) {
-      setState(() {
-        _currentStatus = status;
-      });
-    });
-  }
+  void initState() {}
 
   @override
   void dispose() {
-    _connectionSubscription.cancel();
-    _internetConnection.close();
     super.dispose();
   }
-
-  /* Future<List<Map<String, dynamic>>> _cargarReporte(int idTienda) async {
-    // Crea una instancia de DatabaseHelper
-    DatabaseHelper databaseHelper = DatabaseHelper();
-
-    // Llama al método mostrarReporte en la instancia de DatabaseHelper
-    return databaseHelper.mostrarReporte(widget.idTienda);
-  } */
 
   Future<void> cargarReporte(int idTienda) async {
     List<Reporte> loadedTiendas =
@@ -115,7 +91,6 @@ class _InicioState extends State<Inicio> {
     int idTiend = widget.idTienda;
     String nomTienda = widget.nomTienda;
     print("Tienda seleccionadaaa iniciooo $idTiend");
-    //if (_currentStatus == ConnectionStatus.offline) {
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 45),
@@ -258,10 +233,10 @@ class _InicioState extends State<Inicio> {
                                     rows: filteredReportes.map((item) {
                                       return DataRow(
                                         cells: [
-                                          DataCell(Text(item.claveUbi)),
-                                          DataCell(Text(item.nomDep)),
+                                          DataCell(Text(item.claveUbi!)),
+                                          DataCell(Text(item.nomDep!)),
                                           DataCell(Text(
-                                            item.nomProbl,
+                                            item.nomProbl!,
                                             softWrap: true,
                                           )),
                                           DataCell(
@@ -279,6 +254,13 @@ class _InicioState extends State<Inicio> {
                                                   ),
                                                 );
                                               },
+                                              child: const Center(
+                                                child: Icon(
+                                                  Icons.mode_edit,
+                                                  color: Color.fromRGBO(
+                                                      6, 6, 68, 1),
+                                                ),
+                                              ),
                                             ),
                                           ),
                                         ],
@@ -358,13 +340,5 @@ class _InicioState extends State<Inicio> {
         ),
       ),
     );
-    /* } else {
-      // Si no hay conexión a Internet, mostrar el widget de No Internet
-      return const Scaffold(
-        body: Center(
-          child: NoInternet(), // Usar el widget NoInternetWidget
-        ),
-      );
-    } */
   }
 }

@@ -83,111 +83,6 @@ class ReporteF1Widget extends StatefulWidget {
   State<ReporteF1Widget> createState() => _ReporteWidgetState();
 }
 
-/* Future<File> generatePDF(List<Map<String, dynamic>> data) async {
-  final pdfWidgets.Font customFont = pdfWidgets.Font.ttf(
-    await rootBundle.load('assets/fonts/OpenSans-Italic.ttf'),
-  );
-  final pdf = pdfWidgets.Document();
-
-  // Carga la imagen de forma asíncrona
-  final Uint8List imageData = await _loadImageData('assets/logoconexsa.png');
-
-  pdf.addPage(
-    pdfWidgets.Page(
-      orientation: pdfWidgets.PageOrientation.landscape,
-      build: (context) {
-        return pdfWidgets.Stack(
-          children: [
-            pdfWidgets.Text(
-              "Reporte de Contrastista",
-              style: pdfWidgets.TextStyle(
-                font: customFont,
-                fontSize: 20,
-                fontWeight: pdfWidgets.FontWeight.bold,
-                color: PdfColors.blueGrey500,
-              ),
-            ),
-            pdfWidgets.SizedBox(height: 30),
-            // ignore: deprecated_member_use
-            pdfWidgets.Table.fromTextArray(
-              context: context,
-              data: [
-                ['Problema', 'URLs de imágenes'],
-                for (var row in data)
-                  [
-                    pdfWidgets.Text(
-                      row['nom_probl'].toString(),
-                      style: pdfWidgets.TextStyle(
-                        font: customFont, // Usa la fuente personalizada aquí
-                        fontSize: 12,
-                        color: PdfColors.black,
-                      ),
-                    ),
-                    pdfWidgets.Column(
-                      crossAxisAlignment: pdfWidgets.CrossAxisAlignment.start,
-                      children: [
-                        for (var url in row['foto'])
-                          pdfWidgets.Link(
-                            destination: url,
-                            child: pdfWidgets.Text(
-                              'Ver imagen',
-                              style: pdfWidgets.TextStyle(
-                                font: customFont,
-                                fontSize: 12,
-                                color: PdfColors.blue,
-                                decoration: pdfWidgets.TextDecoration.underline,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ]
-              ],
-              border: null, // Elimina el borde de la tabla
-              cellAlignment: pdfWidgets.Alignment.center,
-              cellStyle: const pdfWidgets.TextStyle(
-                fontSize: 12,
-                color: PdfColors.black,
-              ),
-              headerStyle: pdfWidgets.TextStyle(
-                fontWeight: pdfWidgets.FontWeight.bold,
-                color: PdfColors.black,
-              ),
-              headerDecoration: const pdfWidgets.BoxDecoration(
-                color: PdfColors
-                    .grey200, // Cambia el color de fondo del encabezado
-              ),
-            ),
-            pdfWidgets.Positioned.fill(
-              child: pdfWidgets.Center(
-                // Rota la imagen en sentido contrario a las agujas del reloj
-                child: pdfWidgets.Opacity(
-                  opacity: 0.1, // Establece la opacidad de la imagen
-
-                  child: pdfWidgets.Image(
-                    pdfWidgets.MemoryImage(imageData),
-                    width: 300, // Ancho deseado de la imagen
-                    height: 300, // Alto deseado de la imagen
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    ),
-  );
-
-  // Guarda el PDF en un archivo
-  final Directory directory = await getApplicationDocumentsDirectory();
-  final String filePath = '${directory.path}/reporteContratista.pdf';
-  final File file = File(filePath);
-
-  await file.writeAsBytes(await pdf.save());
-
-  return file;
-} */
-
 Future<File> generatePDF(
     List<Reporte> data, String nomTiend, String? user) async {
   final pdfWidgets.Font customFont = pdfWidgets.Font.ttf(
@@ -369,96 +264,6 @@ Future<File> generatePDF(
           ];
           return widgets;
         },
-
-        /* pdfWidgets.Stack(
-              children: [
-                pdfWidgets.Text(
-                  "Reporte de Contrastista",
-                  style: pdfWidgets.TextStyle(
-                    font: customFont,
-                    fontSize: 20,
-                    fontWeight: pdfWidgets.FontWeight.bold,
-                    color: PdfColors.blueGrey500,
-                  ),
-                ),
-                pdfWidgets.SizedBox(height: 30),
-                // ignore: deprecated_member_use
-                pdfWidgets.Table.fromTextArray(
-                  context: context,
-                  data: [
-                    [
-                      'Departamento',
-                      'Ubicación',
-                      'Problema',
-                      'Material',
-                      'Especifique (Otro)',
-                      'Cantidad',
-                      'Mano de Obra',
-                      'Especifique (Otro)',
-                      'Cantidad',
-                      'URL'
-                    ],
-                    for (var row in pageData)
-                      [
-                        row['nom_dep'].toString(),
-                        row['clave_ubi'].toString(),
-                        pdfWidgets.Text(
-                          row['nom_probl'].toString(),
-                          style: pdfWidgets.TextStyle(
-                            font: customFont,
-                            color: PdfColors.black,
-                          ),
-                        ),
-                        pdfWidgets.Text(
-                          row['nom_mat'].toString(),
-                          style: pdfWidgets.TextStyle(
-                            font:
-                                customFont, // Usa la fuente personalizada aquí
-                            color: PdfColors.black,
-                          ),
-                        ),
-                        row['otro'].toString(),
-                        row['cant_mat'].toString(),
-                        row['nom_obr'].toString(),
-                        row['otro_obr'].toString(),
-                        row['cant_obr'].toString(),
-                        /* pdfWidgets.Column(
-                          crossAxisAlignment:
-                              pdfWidgets.CrossAxisAlignment.start,
-                          children: [
-                            for (var url in row['foto'])
-                              pdfWidgets.Link(
-                                destination: url,
-                                child: pdfWidgets.Text(
-                                  'Ver imagen',
-                                  style: pdfWidgets.TextStyle(
-                                    font: customFont,
-                                    fontSize: 12,
-                                    color: PdfColors.blue,
-                                    decoration:
-                                        pdfWidgets.TextDecoration.underline,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ), */
-                      ]
-                  ],
-                  cellAlignment: pdfWidgets.Alignment.center,
-                  cellStyle: const pdfWidgets.TextStyle(
-                    fontSize: 12,
-                    color: PdfColors.black,
-                  ),
-                  headerStyle: pdfWidgets.TextStyle(
-                    fontWeight: pdfWidgets.FontWeight.bold,
-                    color: PdfColors.black,
-                  ),
-                  headerDecoration: const pdfWidgets.BoxDecoration(
-                    color: PdfColors.grey200,
-                  ),
-                ),
-              ],
-            ), */
       ),
     );
   }
@@ -502,7 +307,7 @@ class _ReporteWidgetState extends State<ReporteF1Widget> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text('Revisa tu conexión a internet'));
+            return const Center(child: Text('Revisa tu conexión a internet'));
           } else {
             List<Reporte> datos = snapshot.data!;
             return ListView(children: [
@@ -568,33 +373,33 @@ class _ReporteWidgetState extends State<ReporteF1Widget> {
                     )),
                   ],
                   rows: datos.map((dato) {
-                    datounico = dato.datoU;
+                    datounico = dato.datoU!;
                     return DataRow(
                       cells: [
                         DataCell(
-                          Text('${dato.nomDep}'),
+                          Text(dato.nomDep ?? ''),
                         ),
                         DataCell(
-                          Text('${dato.claveUbi}'),
+                          Text(dato.claveUbi ?? ''),
                         ),
                         DataCell(
                           Container(
                             width: (MediaQuery.of(context).size.width / 10) * 3,
                             padding: const EdgeInsets.all(3),
-                            child: Center(child: Text('${dato.nomProbl}')),
+                            child: Center(child: Text(dato.nomProbl ?? '')),
                           ),
                         ),
                         DataCell(
                           Container(
                             width: (MediaQuery.of(context).size.width / 10) * 3,
                             padding: const EdgeInsets.all(3),
-                            child: Text('${dato.nomMat}'),
+                            child: Text(dato.nomMat ?? ''),
                           ),
                         ),
                         DataCell(
                           Container(
                             padding: const EdgeInsets.all(3),
-                            child: Center(child: Text('${dato.otro}')),
+                            child: Center(child: Text(dato.otro ?? '')),
                           ),
                         ),
                         DataCell(
@@ -606,13 +411,13 @@ class _ReporteWidgetState extends State<ReporteF1Widget> {
                         DataCell(
                           Container(
                             padding: const EdgeInsets.all(3),
-                            child: Text('${dato.nomObr}'),
+                            child: Text(dato.nomObr ?? ''),
                           ),
                         ),
                         DataCell(
                           Container(
                             padding: const EdgeInsets.all(3),
-                            child: Text('${dato.otroObr}'),
+                            child: Text(dato.otroObr ?? ''),
                           ),
                         ),
                         DataCell(
@@ -635,7 +440,8 @@ class _ReporteWidgetState extends State<ReporteF1Widget> {
                                         context: context,
                                         builder: (context) => AlertDialog(
                                           content: Image.network(
-                                            url.trim(), // Elimina espacios en blanco
+                                            url ??
+                                                '', // Elimina espacios en blanco
                                             errorBuilder:
                                                 (context, error, stackTrace) {
                                               // Manejar el error y mostrar una imagen de respaldo
@@ -648,7 +454,7 @@ class _ReporteWidgetState extends State<ReporteF1Widget> {
                                       );
                                     },
                                     child: Image.network(
-                                      url.trim(), // Elimina espacios en blanco
+                                      url ?? '', // Elimina espacios en blanco
                                       errorBuilder:
                                           (context, error, stackTrace) {
                                         // Manejar el error y mostrar una imagen de respaldo

@@ -4,9 +4,6 @@ import 'package:app_inspections/src/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'package:app_inspections/src/pages/utils/check_internet_connection.dart';
-import 'dart:async';
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -15,33 +12,18 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  //verificar la conexion a internet
-  late final CheckInternetConnection _internetConnection;
-  late StreamSubscription<ConnectionStatus> _connectionSubscription;
-  ConnectionStatus _currentStatus = ConnectionStatus.online;
-
   @override
   void initState() {
     super.initState();
-    _internetConnection = CheckInternetConnection();
-    _connectionSubscription =
-        _internetConnection.internetStatus().listen((status) {
-      setState(() {
-        _currentStatus = status;
-      });
-    });
   }
 
   @override
   void dispose() {
-    _connectionSubscription.cancel();
-    _internetConnection.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    //if (_currentStatus == ConnectionStatus.online) {
     return Scaffold(
       body: AuthBackground(
         child: SingleChildScrollView(
@@ -71,43 +53,22 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
               ),
-              // Botón "Crear una nueva cuenta"
-              /* TextButton(
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, 'registro');
-                },
-                style: ButtonStyle(
-                  overlayColor: MaterialStateProperty.all(
-                    const Color.fromARGB(255, 169, 181, 63).withOpacity(0.1),
-                  ),
-                  shape: MaterialStateProperty.all(const StadiumBorder()),
-                ),
-                child: Text(
-                  'Crear una nueva cuenta',
-                  style: TextStyle(
-                    fontSize: MediaQuery.of(context).size.width * 0.02,
-                    fontWeight: FontWeight.bold,
-                    color: const Color.fromRGBO(169, 27, 96, 1),
-                  ),
-                ),
-              ), */
             ],
           ),
         ),
       ),
     );
-    /*  } else {
-      // Si no hay conexión a Internet, mostrar el widget de No Internet
-      return const Scaffold(
-        body: Center(
-          child: NoInternet(), // Usar el widget NoInternetWidget
-        ),
-      );
-    } */
   }
 }
 
-class _LoginForm extends StatelessWidget {
+class _LoginForm extends StatefulWidget {
+  @override
+  State<_LoginForm> createState() => _LoginFormState();
+}
+
+class _LoginFormState extends State<_LoginForm> {
+  bool _obscurePassword = true;
+
   @override
   Widget build(BuildContext context) {
     final loginForm = Provider.of<LoginFormProvider>(context);
@@ -161,23 +122,28 @@ class _LoginForm extends StatelessWidget {
             padding: const EdgeInsets.symmetric(
                 horizontal: 20), // Agregar espacio a los lados
             child: TextFormField(
-              // Configuraciones del cuadro de texto
-              autocorrect: false,
-              keyboardType: TextInputType.visiblePassword,
-              obscureText: true, // Para ocultar la contraseña
+              obscureText: _obscurePassword,
               onChanged: (value) => loginForm.password = value,
               autovalidateMode: AutovalidateMode.onUserInteraction,
               validator: (value) {
                 return (value != null && value.length >= 6)
                     ? null
-                    : 'La contraseña debe de ser de 6 caracteres';
+                    : 'La contraseña debe tener al menos 6 caracteres';
               },
-              // Decoración del cuadro de texto
               decoration: InputDecoration(
                 hintText: '***********',
                 labelText: 'Contraseña',
-                prefixIcon: const Icon(Icons.lock_outlined),
-                // Cambiar el color del borde del cuadro de texto
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                    color: Theme.of(context).primaryColorDark,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
+                ),
                 enabledBorder: OutlineInputBorder(
                   borderSide: const BorderSide(
                     color: Color.fromRGBO(169, 27, 96, 1),

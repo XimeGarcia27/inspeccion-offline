@@ -1,4 +1,3 @@
-import 'package:app_inspections/services/auth_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -7,13 +6,9 @@ import 'package:postgres/postgres.dart';
 class DatabaseHelper {
   final storage = const FlutterSecureStorage();
 
-  static Future<PostgreSQLConnection> _getConnection() async {
-    return await AuthService().openConnection();
-  }
+  static PostgreSQLConnection? connection;
 
-  /*  static PostgreSQLConnection? connection;
-
-  static Future<PostgreSQLConnection> openConnection() async {
+  static Future<PostgreSQLConnection> _openConnection() async {
     try {
       const databaseHost =
           'ep-red-wood-a4nzhmfu-pooler.us-east-1.postgres.vercel-storage.com';
@@ -38,10 +33,10 @@ class DatabaseHelper {
       print('Error al abrir la conexión: $e');
       throw e;
     }
-  } */
+  }
 
   static Future<List<Map<String, dynamic>>> mostrarTiendas() async {
-    final connection = await _getConnection();
+    final connection = await _openConnection();
     try {
       //print('Antes de la consulta');
       final results = await connection.query('SELECT * FROM tiendas');
@@ -70,7 +65,7 @@ class DatabaseHelper {
   }
 
   static Future<List<Map<String, dynamic>>> searchTiendas(String query) async {
-    final connection = await _getConnection();
+    final connection = await _openConnection();
     try {
       final results = await connection.query(
         'SELECT * FROM tiendas WHERE cod_tienda ILIKE @query OR nom_tienda ILIKE @query_nom',
@@ -97,7 +92,7 @@ class DatabaseHelper {
 
   static Future<List<Map<String, dynamic>>> mostrarProblemas(
       String query) async {
-    final connection = await _getConnection();
+    final connection = await _openConnection();
     try {
       final results = await connection.query('SELECT * FROM problemas');
       final List<Map<String, dynamic>> mappedResults = results
@@ -122,7 +117,7 @@ class DatabaseHelper {
 
   static Future<List<Map<String, dynamic>>> mostrarMateriales(
       String query) async {
-    final connection = await _getConnection();
+    final connection = await _openConnection();
     try {
       final results = await connection.query('SELECT * FROM materiales');
       final List<Map<String, dynamic>> mappedResults = results
@@ -145,7 +140,7 @@ class DatabaseHelper {
   }
 
   static Future<List<Map<String, dynamic>>> mostrarObra(String query) async {
-    final connection = await _getConnection();
+    final connection = await _openConnection();
     try {
       final results = await connection.query('SELECT * FROM obra');
       final List<Map<String, dynamic>> mappedResults = results
@@ -185,7 +180,7 @@ class DatabaseHelper {
       String datoUnico,
       String nomUser,
       int idTiend) async {
-    final connection = await _getConnection();
+    final connection = await _openConnection();
     try {
       String urlsString =
           foto.map((url) => "'$url'").join(','); // Unir las URLs con comas
@@ -233,7 +228,7 @@ class DatabaseHelper {
 
   Future<List<Map<String, dynamic>>> mostrarReporte(int idtienda) async {
     //print("ID TIENDA EN CONSULTA $idtienda");
-    final connection = await _getConnection();
+    final connection = await _openConnection();
     try {
       //print('Antes de la consulta');
       final results = await connection
@@ -264,7 +259,7 @@ class DatabaseHelper {
   }
 
   Future<List<Map<String, dynamic>>> mostrarReporteF1(int idtienda) async {
-    final connection = await _getConnection();
+    final connection = await _openConnection();
     try {
       final results = await connection.query(
           "SELECT * FROM reporte WHERE id_tienda = $idtienda AND formato = 'F1' ");
@@ -289,7 +284,7 @@ class DatabaseHelper {
   }
 
   Future<List<Map<String, dynamic>>> mostrarReporteF2(int idtienda) async {
-    final connection = await _getConnection();
+    final connection = await _openConnection();
     try {
       final results = await connection.query(
           "SELECT * FROM reporte WHERE id_tienda = $idtienda AND formato = 'F2' ");
@@ -329,7 +324,7 @@ class DatabaseHelper {
     int cantO,
     int idTiend,
   ) async {
-    final connection = await _getConnection();
+    final connection = await _openConnection();
     try {
       // Validación de parámetros
       if (valorDepartamento.isEmpty ||
@@ -374,7 +369,7 @@ class DatabaseHelper {
 
   Future<Map<String, dynamic>> obtenerDefectoPorId(int idDefecto) async {
     try {
-      final connection = await _getConnection();
+      final connection = await _openConnection();
 
       // Realiza la consulta en tu tabla de problemas utilizando el ID proporcionado
       List<Map<String, Map<String, dynamic>>> resultados =
@@ -404,7 +399,7 @@ class DatabaseHelper {
 
   Future<Map<String, dynamic>> obtenerMaterialPorId(int idMaterial) async {
     try {
-      final connection = await _getConnection();
+      final connection = await _openConnection();
 
       // Realiza la consulta en tu tabla de problemas utilizando el ID proporcionado
       List<Map<String, Map<String, dynamic>>> resultados =
@@ -434,7 +429,7 @@ class DatabaseHelper {
 
   Future<Map<String, dynamic>> obtenerObraPorId(int idObra) async {
     try {
-      final connection = await _getConnection();
+      final connection = await _openConnection();
 
       // Realiza la consulta en tu tabla de problemas utilizando el ID proporcionado
       List<Map<String, Map<String, dynamic>>> resultados =
@@ -463,7 +458,7 @@ class DatabaseHelper {
   }
 
   Future<List<Map<String, dynamic>>> mostrarCantidades(int idtienda) async {
-    final connection = await _getConnection();
+    final connection = await _openConnection();
     try {
       final results = await connection.query(
           "SELECT nom_mat, SUM(cant_mat) as cantidad_total FROM reporte WHERE id_tienda = $idtienda GROUP BY nom_mat");
@@ -488,7 +483,7 @@ class DatabaseHelper {
 
   static Future<void> insertarImagenes(
       List<String?> fotos, String datoUnico, int idTienda) async {
-    final connection = await _getConnection();
+    final connection = await _openConnection();
 
     try {
       for (var foto in fotos) {

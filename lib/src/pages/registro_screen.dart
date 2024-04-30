@@ -1,5 +1,4 @@
 import 'package:app_inspections/providers/login_form_provider.dart';
-import 'package:app_inspections/services/services.dart';
 import 'package:app_inspections/src/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -195,25 +194,8 @@ class _LoginForm extends StatelessWidget {
                   ? null
                   : () async {
                       FocusScope.of(context).unfocus();
-                      final authService =
-                          Provider.of<AuthService>(context, listen: false);
-
                       if (!loginForm.isValidForm()) return;
-
                       loginForm.isLoading = true;
-
-                      final String? errorMessage = await authService.createUser(
-                          loginForm.name,
-                          loginForm.usuario,
-                          loginForm.password);
-                      if (errorMessage == null) {
-                        // ignore: use_build_context_synchronously
-                        Navigator.pushReplacementNamed(
-                            context, 'login'); //navegar a otra pantalla
-                      } else {
-                        print(errorMessage);
-                        loginForm.isLoading = false;
-                      }
                     },
               child: Container(
                   padding:

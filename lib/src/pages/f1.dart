@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:app_inspections/services/functions.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -99,7 +100,7 @@ class _MyFormState extends State<MyForm> {
   String selectedFormato = "F1";
   bool isGuardarHabilitado = false;
   String? nomUser = "";
-  String? _urlImagenSeleccionada = "";
+
   String formato = "";
 
   List<String> problemasEscritos = [];
@@ -161,8 +162,7 @@ class _MyFormState extends State<MyForm> {
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final ImagePicker _picker = ImagePicker();
-  List<String> imagePaths =
-      []; // Lista para almacenar las rutas de las imágenes
+  String imagePaths = ""; // Lista para almacenar las rutas de las imágenes
 
   final TextEditingController _textEditingControllerProblema =
       TextEditingController();
@@ -214,12 +214,17 @@ class _MyFormState extends State<MyForm> {
       setState(() {
         images.add(image);
       });
-      String? imageURL =
-          await FirebaseStorageService.uploadImage(File(image.path));
-      print("IURL DE LA IMAGEN $imageURL");
-      _guardarImagenEnBD(imageURL);
-      // Agrega la URL de la imagen a la lista de URLs
-      imageUrls.add(imageURL);
+      // Guardar la imagen en algún lugar del dispositivo
+      final Directory directory = await getApplicationDocumentsDirectory();
+      String imagePath =
+          '${directory.path}/foto_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final File imageFile = File(imagePath);
+      await imageFile.writeAsBytes(await image.readAsBytes());
+
+      // Asignar la ruta de la imagen al campo "foto" en el modelo Reporte
+      Reporte reporte = Reporte(foto: imagePath);
+      print("IMAGENNN: $reporte");
+      imagePaths = imagePath;
     }
   }
 
@@ -299,13 +304,13 @@ class _MyFormState extends State<MyForm> {
     }
   }
 
-  void _guardarImagenEnBD(String? imageURL) {
+  /*  void _guardarImagenEnBD(File imageURL) {
     setState(() {
       // Asigna la URL de la imagen a una variable de estado para su uso en el formulario
       _urlImagenSeleccionada = imageURL;
     });
     print("URL D ELA IMAGEEEN $_urlImagenSeleccionada");
-  }
+  } */
   //
 
   void _guardarDatos() {
@@ -324,7 +329,6 @@ class _MyFormState extends State<MyForm> {
         int cantO = 0;
         List<String?> fotos = [];
         String datoUnico = generateUniqueId();
-        String formatoSel = "";
 
         for (final datos in datosIngresados) {
           // Usar un valor predeterminado si el valor es nulo
@@ -355,7 +359,6 @@ class _MyFormState extends State<MyForm> {
           }
 
           Reporte nuevoReporte = Reporte(
-            idRep: 0,
             formato: formato,
             nomDep: valorDepartamento,
             claveUbi: valorUbicacion,
@@ -369,7 +372,7 @@ class _MyFormState extends State<MyForm> {
             nomObr: nomObra,
             otroObr: otroO,
             cantObr: cantO,
-            foto: fotosString, // Debes manejar la lógica para las fotos aquí
+            foto: imagePaths, // Debes manejar la lógica para las fotos aquí
             datoU: datoUnico,
             nombUser: nomUser!, // Aquí debes establecer el nombre del usuario
             lastUpdated: DateTime.now().toIso8601String(),
@@ -391,7 +394,7 @@ class _MyFormState extends State<MyForm> {
           print("OTRO MANO DE OBRA $otroO");
           print("CANTIDAD MANO OBRA $cantO");
           print("DATO UNICO PARA REFERENCIAR $datoUnico");
-          print("FOTO $fotos");
+          print("FOTO $imagePaths");
           print("USUARIO $nomUser");
           print("ID TIENDA $idTiend");
 
@@ -1143,7 +1146,7 @@ class _MyFormState extends State<MyForm> {
                 ElevatedButton(
                   onPressed: isGuardarHabilitado
                       ? () {
-                          //guardarDatosConConfirmacion(context);
+                          guardarDatosConConfirmacion(context);
                         }
                       : null, // Desactiva el botón si isGuardarHabilitado es falso
                   key: null,

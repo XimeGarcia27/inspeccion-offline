@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class FotoCard extends StatelessWidget {
+  const FotoCard({super.key});
+
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context)
@@ -10,7 +12,7 @@ class FotoCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
-        margin: EdgeInsets.only(top: 30, bottom: 30),
+        margin: const EdgeInsets.only(top: 30, bottom: 30),
         width: screenWidth *
             0.9, // Utilizando un porcentaje del ancho de la pantalla
         height: 600,
@@ -42,10 +44,10 @@ class _BackgroundImage extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(25),
-      child: Container(
+      child: const SizedBox(
         width: double.infinity,
         height: 600,
-        child: const FadeInImage(
+        child: FadeInImage(
           placeholder: AssetImage('assets/jar-loading.gif'),
           image: NetworkImage(
               'https://firebasestorage.googleapis.com/v0/b/app-inspecciones.appspot.com/o/Servicios%20maquila%2FCortadora%20l%C3%A1ser%2FIMG_6353.jpg?alt=media&token=c83b9e86-f6e0-46d1-9a49-6038d514acfd'),

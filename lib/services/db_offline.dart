@@ -215,7 +215,6 @@ class DatabaseProvider {
 
       return results
           .map((row) => Reporte(
-                idRep: row['id_rep'],
                 formato: row['formato'],
                 nomDep: row['nom_dep'],
                 claveUbi: row['clave_ubi'],
@@ -265,7 +264,6 @@ class DatabaseProvider {
 
       return results
           .map((row) => Reporte(
-                idRep: row['id_rep'],
                 formato: row['formato'],
                 nomDep: row['nom_dep'],
                 claveUbi: row['clave_ubi'],

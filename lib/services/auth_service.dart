@@ -1,6 +1,5 @@
 import 'package:app_inspections/services/db_offline.dart';
 import 'package:flutter/foundation.dart';
-import 'package:postgres/postgres.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -13,46 +12,7 @@ class AuthService extends ChangeNotifier {
   String? _currentUser;
   String? get currentUser => _currentUser;
 
-  final String _databaseHost =
-      'ep-red-wood-a4nzhmfu-pooler.us-east-1.postgres.vercel-storage.com';
-  final int _databasePort = 5432;
-  final String _databaseName = 'verceldb';
-  final String _username = 'default';
-  final String _password = 'Iqkc7nFOlR6d';
-
   final storage = const FlutterSecureStorage();
-
-  Future<PostgreSQLConnection> openConnection() async {
-    try {
-      final connection = PostgreSQLConnection(
-        _databaseHost,
-        _databasePort,
-        _databaseName,
-        username: _username,
-        password: _password,
-        useSSL: true,
-      );
-
-      await connection.open();
-      if (kDebugMode) {
-        print('BASE CONECTADA');
-      }
-      return connection;
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error al abrir la conexión: $e');
-      }
-      rethrow;
-    }
-  }
-
-  Future<void> closeConnection() async {
-    final connection = await openConnection();
-    await connection.close();
-    if (kDebugMode) {
-      print('Conexión a PostgreSQL cerrada');
-    }
-  }
 
   // Método para establecer el nombre de usuario actual
   void setCurrentUser(String username) {
@@ -60,7 +20,7 @@ class AuthService extends ChangeNotifier {
     notifyListeners(); // Notificar a los listeners que el estado ha cambiado
   }
 
-  Future<String?> createUser(
+/*   Future<String?> createUser(
       String name, String email, String contrasena) async {
     try {
       final connection = await openConnection();
@@ -78,7 +38,7 @@ class AuthService extends ChangeNotifier {
       }
       return e.toString();
     }
-  }
+  } */
 
   Future<String?> login(String nomUsu, String contrasena) async {
     try {
@@ -112,8 +72,4 @@ class AuthService extends ChangeNotifier {
       print('Usuario desconectado');
     }
   }
-
-  /* Future<String?> readToken() async {
-    return await storage.read(key: 'token') ?? '';
-  } */
 }

@@ -7,6 +7,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeFoto extends StatefulWidget {
+  const HomeFoto({super.key});
+
+  @override
+  // ignore: library_private_types_in_public_api
   _HomeFotoState createState() => _HomeFotoState();
 }
 
@@ -258,14 +262,14 @@ class _HomeFotoState extends State<HomeFoto> {
                   );
                 },
               ),
-              SizedBox(height: 11), // Espacio entre cada foto
+              const SizedBox(height: 11), // Espacio entre cada foto
             ],
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.camera),
         onPressed: _optionsDialogBox,
+        child: const Icon(Icons.camera),
       ),
       persistentFooterButtons: [
         _buildSaveButton(), // Agrega el botón de guardar al pie de la pantalla
@@ -287,8 +291,8 @@ class _HomeFotoState extends State<HomeFoto> {
   Widget _buildSaveButton() {
     return Container(
       width: double.infinity,
-      padding:
-          EdgeInsets.symmetric(vertical: 8.0), // Reducir el relleno vertical
+      padding: const EdgeInsets.symmetric(
+          vertical: 8.0), // Reducir el relleno vertical
       child: MaterialButton(
         onPressed: _saveImages,
         color: const Color.fromRGBO(6, 6, 68, 1),
@@ -297,7 +301,7 @@ class _HomeFotoState extends State<HomeFoto> {
           borderRadius:
               BorderRadius.circular(20.0), // Hacer el botón más redondo
         ),
-        child: Text(
+        child: const Text(
           'Guardar',
           style: TextStyle(
             color: Colors.white,
@@ -315,15 +319,15 @@ class _HomeFotoState extends State<HomeFoto> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text('Límite alcanzado'),
-            content:
-                Text('Ya has tomado el máximo número de fotos permitidas.'),
+            title: const Text('Límite alcanzado'),
+            content: const Text(
+                'Ya has tomado el máximo número de fotos permitidas.'),
             actions: <Widget>[
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
                 },
-                child: Text('OK'),
+                child: const Text('OK'),
               ),
             ],
           );

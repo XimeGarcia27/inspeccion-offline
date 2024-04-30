@@ -7,8 +7,8 @@ import 'package:app_inspections/models/usuarios.dart';
 import 'package:app_inspections/services/auth_service.dart';
 import 'package:app_inspections/services/db_offline.dart';
 import 'package:app_inspections/services/db_online.dart';
+import 'package:app_inspections/src/pages/agregarDefectos.dart';
 import 'package:app_inspections/src/pages/f1.dart';
-import 'package:app_inspections/src/pages/fotos_prueba.dart';
 import 'package:app_inspections/src/pages/inicio_indv.dart';
 import 'package:app_inspections/src/pages/prueba.dart';
 import 'package:app_inspections/src/pages/screens.dart';
@@ -106,10 +106,12 @@ class MyApp extends StatelessWidget {
         "f1": (_) => const F1Screen(idTienda: 1),
         "inicio": (_) =>
             const InicioScreen(idTienda: 1, initialTabIndex: 0, nomTienda: ''),
-        "home": (_) => HomeFoto(),
-        "foto": (_) => FotosPrueba(),
+        "home": (_) => const HomeFoto(),
         "user": (_) => const UserInsertion(),
-        "prueba": (_) => const FormPrincipal(),
+        "prueba": (_) => const FormPrincipal(
+              idTienda: 1,
+            ),
+        "defectos": (_) => Defectos(),
       },
       scaffoldMessengerKey: NotificationsServices.messengerKey,
       theme: ThemeData.light().copyWith(

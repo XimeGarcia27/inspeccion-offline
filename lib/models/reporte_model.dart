@@ -1,49 +1,46 @@
 class Reporte {
-  int idRep;
-  String formato;
-  String nomDep;
-  String claveUbi;
-  int idProbl;
-  String nomProbl;
-  int idMat;
-  String nomMat;
-  String otro;
-  int cantMat;
-  int idObr;
-  String nomObr;
-  String otroObr;
-  int cantObr;
-  String foto;
-  String datoU;
-  String nombUser;
-  String lastUpdated;
-  int idTienda;
+  String? formato;
+  String? nomDep;
+  String? claveUbi;
+  int? idProbl;
+  String? nomProbl;
+  int? idMat;
+  String? nomMat;
+  String? otro;
+  int? cantMat;
+  int? idObr;
+  String? nomObr;
+  String? otroObr;
+  int? cantObr;
+  String? foto;
+  String? datoU;
+  String? nombUser;
+  String? lastUpdated;
+  int? idTienda;
 
   Reporte({
-    required this.idRep,
-    required this.formato,
-    required this.nomDep,
-    required this.claveUbi,
-    required this.idProbl,
-    required this.nomProbl,
-    required this.idMat,
-    required this.nomMat,
-    required this.otro,
-    required this.cantMat,
-    required this.idObr,
-    required this.nomObr,
-    required this.otroObr,
-    required this.cantObr,
-    required this.foto,
-    required this.datoU,
-    required this.nombUser,
-    required this.lastUpdated,
-    required this.idTienda,
+    this.formato,
+    this.nomDep,
+    this.claveUbi,
+    this.idProbl,
+    this.nomProbl,
+    this.idMat,
+    this.nomMat,
+    this.otro,
+    this.cantMat,
+    this.idObr,
+    this.nomObr,
+    this.otroObr,
+    this.cantObr,
+    this.foto,
+    this.datoU,
+    this.nombUser,
+    this.lastUpdated,
+    this.idTienda,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      'id_rep': idRep,
       'formato': formato,
       'nom_dep': nomDep,
       'clave_ubi': claveUbi,
@@ -67,7 +64,6 @@ class Reporte {
 
   factory Reporte.fromMap(Map<String, dynamic> map) {
     return Reporte(
-      idRep: map['id_rep'] ?? 0,
       formato: map['formato'] ?? "",
       nomDep: map['nom_dep'] ?? "",
       claveUbi: map['clave_ubi'] ?? "",
