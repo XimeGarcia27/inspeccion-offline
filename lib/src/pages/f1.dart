@@ -328,8 +328,8 @@ class _MyFormState extends State<MyForm> {
         String cantidadO = _cantobraController.text;
         int cantM = 0;
         int cantO = 0;
-        List<String?> fotos = [];
-        String datoUnico = generateUniqueId();
+        String datoUnico = "";
+        //List<String?> fotos = [];
 
         for (final datos in datosIngresados) {
           // Usar un valor predeterminado si el valor es nulo
@@ -347,7 +347,9 @@ class _MyFormState extends State<MyForm> {
           nomObra = datos['Obra'] ?? '';
           otroO = datos['Otro_Obr'] ?? 0;
           cantidadO = datos['Cantidad_Obra'] ?? ' ';
-          fotos = datos['Foto'] ?? 0;
+          cantidadO = datos['Cantidad_Obra'] ?? ' ';
+          datoUnico = datos['Dato_Unico'] ?? ' ';
+          //fotos = datos['Foto'] ?? 0;
           String fotosString = imagePaths.join(
               ','); // Concatenar las URLs de las fotos en una sola cadena separada por comas
 
@@ -459,8 +461,10 @@ class _MyFormState extends State<MyForm> {
       String nomObra = _textEditingControllerObra.text;
       String otro = _otroMPController.text;
       String otroO = _otroObraController.text;
-      List<String?> fotos = [];
-      fotos = imageUrls;
+
+      String datoUnico = generateUniqueId();
+      //List<String?> fotos = [];
+      //fotos = imageUrls;
       // Agregar los datos a la lista
       datosIngresados.add({
         'Formato': formato,
@@ -475,8 +479,9 @@ class _MyFormState extends State<MyForm> {
         'ID_Obra': idObra,
         'Obra': nomObra,
         'Otro_Obr': otroO,
+        'Dato_Unico': datoUnico,
         'Cantidad_Obra': valorCanObra,
-        'Foto': fotos,
+        //'Foto': fotos,
       });
       // Crear una lista para almacenar los nombres de los campos vacíos
       List<String> camposVacios = [];

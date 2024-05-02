@@ -1,5 +1,4 @@
 import 'package:app_inspections/models/reporte_model.dart';
-import 'package:app_inspections/services/auth_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -529,75 +528,90 @@ class DatabaseHelper {
 
   //soncronizar con bd local
   static Future<void> sincronizarConPostgreSQL(List<Reporte> reportes) async {
-    /*  // Establecer la conexión a la base de datos PostgreSQL
+    // Establecer la conexión a la base de datos PostgreSQL
     final connection = await _openConnection();
+
+    // Utilizar un conjunto para evitar duplicados
+    final Set<String> reportesExistente = <String>{};
 
     // Iterar sobre los reportes y realizar la inserción o actualización en PostgreSQL
     for (final reporte in reportes) {
-      //int id = reporte.idRep;
-      /* print("id de reportes $id");
+      // Verificar si el reporte ya existe en PostgreSQL
+      if (!reportesExistente.contains(reporte.datoU)) {
+        // Marcar el reporte como existente para evitar duplicados
+        reportesExistente.add(reporte.datoU!);
 
-      // Comprobar si el reporte ya existe en PostgreSQL (por ejemplo, utilizando su identificador único)
-      final existe = await connection.query(
-          'SELECT COUNT(*) FROM reportes WHERE id_rep = @id',
-          substitutionValues: {'id': id}); */
-
-      if (existe != null) {
-        print("EXISTEN DATOS $existe");
-        // Actualizar el reporte en PostgreSQL
-        //nom_user TEXT NOT NULL, lastUpdated DATETIME, id_tienda INTEGER NOT NULL,"
-
-        await connection.execute(
-          'UPDATE reportes SET formato = @formato, nom_dep = @valorDepartamento, clave_ubi = @valorUbicacion,'
-          'id_probl = @idProbl, nom_probl = @nomProbl, id_mat = @idMat, nom_mat = @nomMat, otro = @otro, cant_mat = @cantM, id_obr = @idObra, nom_obr = @nomObr, otro_obr = @otroObr,'
-          'cant_obr = @cantO, nom_user = @nomUser, last_updated = @lastUpdated, id_tienda = @idTiend WHERE id_rep = @id',
-          substitutionValues: {
-            'formato': reporte.formato,
-            'valorDepartamento': reporte.nomDep,
-            'valorUbicacion': reporte.claveUbi,
-            'idProbl': reporte.idProbl,
-            'nomProbl': reporte.nomProbl,
-            'idMat': reporte.idMat,
-            'nomMat': reporte.nomMat,
-            'otro': reporte.otro,
-            'cantM': reporte.cantMat,
-            'idObra': reporte.idObr,
-            'nomObr': reporte.nomObr,
-            'otroObr': reporte.otroObr,
-            'cantO': reporte.cantObr,
-            'nomUser': reporte.nombUser,
-            'lastUpdated': reporte.lastUpdated,
-            'idTiend': reporte.idTienda,
-          },
+        // Realizar la consulta para verificar la existencia del reporte
+        final result = await connection.query(
+          'SELECT * FROM reportes WHERE dato_unico = @datoUnico',
+          substitutionValues: {'datoUnico': reporte.datoU},
         );
-        print("datos actualizados correctamente");
+        print("EL DATO YA EXISTE");
+
+        if (result.isNotEmpty) {
+          print("EL DATO SE ACTUALIZARA");
+          // El reporte ya existe, actualizarlo en PostgreSQL
+          await connection.execute(
+            'UPDATE reportes SET formato = @formato, nom_dep = @valorDepartamento, clave_ubi = @valorUbicacion, '
+            'id_probl = @idProbl, nom_probl = @nomProbl, id_mat = @idMat, nom_mat = @nomMat, otro = @otro, cant_mat = @cantM, id_obr = @idObra, '
+            'nom_obr = @nomObr, otro_obr = @otroObr, cant_obr = @cantO, foto = @foto, last_updated = @lastUpdated, id_tienda = @idTiend '
+            'WHERE dato_unico = @datoUnico',
+            substitutionValues: {
+              'formato': reporte.formato,
+              'valorDepartamento': reporte.nomDep,
+              'valorUbicacion': reporte.claveUbi,
+              'idProbl': reporte.idProbl,
+              'nomProbl': reporte.nomProbl,
+              'idMat': reporte.idMat,
+              'nomMat': reporte.nomMat,
+              'otro': reporte.otro,
+              'cantM': reporte.cantMat,
+              'idObra': reporte.idObr,
+              'nomObr': reporte.nomObr,
+              'otroObr': reporte.otroObr,
+              'cantO': reporte.cantObr,
+              'foto': reporte.foto,
+              'lastUpdated': reporte.lastUpdated,
+              'idTiend': reporte.idTienda,
+              'datoUnico': reporte.datoU,
+            },
+          );
+          print("Reporte actualizado correctamente ");
+        } else {
+          print("EL DATO SE INSERTARA");
+
+          await connection.query(
+            'INSERT INTO reportes (formato, nom_dep, clave_ubi, id_probl, nom_probl, id_mat, nom_mat, otro, cant_mat, id_obr, nom_obr, otro_obr, cant_obr, foto, dato_unico, nom_user, last_updated, id_tienda)'
+            'VALUES (@formato, @valorDepartamento, @valorUbicacion, @idProbl, @nomProbl, @idMat, @nomMat, @otro, @cantM, @idObra, @nomObr, @otroObr, @cantO, @foto, @datoUnico, @nomUser, @lastUpdated, @idTiend)',
+            substitutionValues: {
+              'formato': reporte.formato,
+              'valorDepartamento': reporte.nomDep,
+              'valorUbicacion': reporte.claveUbi,
+              'idProbl': reporte.idProbl,
+              'nomProbl': reporte.nomProbl,
+              'idMat': reporte.idMat,
+              'nomMat': reporte.nomMat,
+              'otro': reporte.otro,
+              'cantM': reporte.cantMat,
+              'idObra': reporte.idObr,
+              'nomObr': reporte.nomObr,
+              'otroObr': reporte.otroObr,
+              'cantO': reporte.cantObr,
+              'foto': reporte.foto,
+              'datoUnico': reporte.datoU,
+              'nomUser': reporte.nombUser,
+              'lastUpdated': reporte.lastUpdated,
+              'idTiend': reporte.idTienda,
+            },
+          );
+          print("Reporte insertado correctamente");
+        }
       } else {
-        // Insertar el reporte en PostgreSQL
-        await insertarReporte(
-            reporte.formato!,
-            reporte.nomDep!,
-            reporte.claveUbi!,
-            reporte.idProbl!,
-            reporte.nomProbl!,
-            reporte.idMat!,
-            reporte.nomMat!,
-            reporte.otro!,
-            reporte.cantMat!,
-            reporte.idObr!,
-            reporte.nomObr!,
-            reporte.otroObr!,
-            reporte.cantObr!,
-            reporte.foto!,
-            reporte.datoU!,
-            reporte.nombUser!,
-            reporte.lastUpdated!,
-            reporte.idTienda!);
-        print("datos insertados correctamente");
+        print("El reporte con dato único ${reporte.datoU} ya se ha procesado");
       }
     }
 
     // Cerrar la conexión a la base de datos PostgreSQL
-    //await connection.close();
-  } */
+    await connection.close();
   }
 }

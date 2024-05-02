@@ -38,8 +38,8 @@ void main() async {
   insertInitialDataT();
   //llamar a la funcion para insertar datos iniciales de usuarios
   insertInitialDataUser();
-
-  DatabaseProvider.mostrarReporteF1(0);
+  //llamar a la funcion para insertar datos del reporte cuando hay internet
+  //insertarReporteOnline();
 
   dbHelper = DatabaseHelper();
 
@@ -47,26 +47,28 @@ void main() async {
     dbHelper: dbHelper,
   ));
 
-  // Suscribe para recibir actualizaciones sobre el estado de la conexión
-
-  internetChecker.internetStatus().listen((status) async {
-    print('Estado de conexión actualizado: $status');
-    // Aquí puedes manejar la lógica basada en el estado de la conexión
-    // Por ejemplo, puedes llamar a la función de sincronización con PostgreSQL si el estado es online
-    if (status == ConnectionStatus.online) {
-      // Supongamos que tienes un futuro que resuelve en una lista de reportes
-      Future<List<Reporte>> futuroReportes =
-          DatabaseProvider.leerReportesDesdeSQLite();
-
-      // Espera el futuro para obtener la lista de reportes
-      List<Reporte> listaReportes = await futuroReportes;
-      // Aquí puedes llamar a tu función para sincronizar con PostgreSQL
-
-      await DatabaseHelper.sincronizarConPostgreSQL(listaReportes);
-    }
-  });
-
   return;
+}
+
+Future<void> insertarReporteOnline(
+    // Parámetros del reporte
+    ) async {
+  try {
+    // Verificar si hay conexión a Internets
+    final connectionStatus = await internetChecker.internetStatus().first;
+    if (connectionStatus == ConnectionStatus.online) {
+      print("CONEXION ACTIVA");
+      // Si hay conexión, obtener los reportes locales
+      final List<Reporte> reportes =
+          await DatabaseProvider.leerReportesDesdeSQLite();
+
+      // Sincronizar los reportes locales con la base de datos remota
+      await DatabaseHelper.sincronizarConPostgreSQL(reportes);
+      print("SE INSERTO EL DATO EN POSTGRE $reportes");
+    }
+  } catch (e) {
+    print("No se pudo insertar el reporte online");
+  }
 }
 
 class NotificationsServices {

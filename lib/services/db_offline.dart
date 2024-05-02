@@ -1,3 +1,4 @@
+import 'package:app_inspections/main.dart';
 import 'package:app_inspections/models/mano_obra.dart';
 import 'package:app_inspections/models/materiales.dart';
 import 'package:app_inspections/models/models.dart';
@@ -79,11 +80,21 @@ class DatabaseProvider {
 
   //método para insertar los datos del form de reporte
   static Future<int> insertReporte(Reporte reporte) async {
-    Database database = await openDB();
+    try {
+      Database database = await openDB();
 
-    print("SE INSERTO CORRECTAMENTE EL REPORTE $reporte");
+      // Insertar el reporte en la base de datos local
+      int id = await database.insert("reporte", reporte.toMap());
 
-    return database.insert("reporte", reporte.toMap());
+      // Si hay conexión a Internet, sincronizar el reporte con la base de datos remota
+      insertarReporteOnline();
+
+      return id;
+    } catch (e) {
+      // Manejar errores
+      print("NO SE PUDO INSERTAR EL REPORTE");
+      return -1; // Retornar un valor indicando un error, por ejemplo, -1
+    }
   }
 
   //método para mostrar la lista de problemas para el form
@@ -306,11 +317,13 @@ class DatabaseProvider {
 
     // Ejecutar una consulta para obtener los datos de la tabla 'reporte'
     final resultados = await database.query('reporte');
+    print("REPORTES EN MI BD LOCAL $resultados");
 
     // Mapear los resultados a objetos Reporte
     final reportes = resultados.map((row) => Reporte.fromMap(row)).toList();
+    print("REPORTES EN MI BD LOCAL $reportes");
 
-    // Cerrar la conexión a la base de datos
+    //Cerrar la conexión a la base de datos
     //await database.close();
 
     return reportes;
