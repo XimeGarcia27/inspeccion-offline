@@ -14,6 +14,7 @@ class Reporte {
   int? cantObr;
   String? foto;
   String? datoU;
+  String? datoC;
   String? nombUser;
   String? lastUpdated;
   int? idTienda;
@@ -34,6 +35,7 @@ class Reporte {
     this.cantObr,
     this.foto,
     this.datoU,
+    this.datoC,
     this.nombUser,
     this.lastUpdated,
     this.idTienda,
@@ -56,6 +58,7 @@ class Reporte {
       'cant_obr': cantObr,
       'foto': foto,
       'dato_unico': datoU,
+      'dato_comp': datoC,
       'nom_user': nombUser,
       'last_updated': lastUpdated,
       'id_tienda': idTienda,
@@ -79,6 +82,7 @@ class Reporte {
       cantObr: map['cant_obr'] ?? 0,
       foto: map['foto'] ?? "",
       datoU: map['dato_unico'] ?? "",
+      datoC: map['dato_comp'] ?? "",
       nombUser: map['nom_user'] ?? "",
       lastUpdated: map['last_updated'] ?? "",
       idTienda: map['id_tienda'] ?? "",

@@ -97,7 +97,7 @@ class _MyFormState extends State<MyForm> {
   int idProbl = 0;
   int idMat = 0;
   int idObra = 0;
-  String selectedFormato = "F1";
+  //String selectedFormato = "F1";
   bool isGuardarHabilitado = false;
   String? nomUser = "";
 
@@ -330,6 +330,7 @@ class _MyFormState extends State<MyForm> {
         int cantO = 0;
         String datoUnico = "";
         //List<String?> fotos = [];
+        String datoCompartido = generateUniqueId();
 
         for (final datos in datosIngresados) {
           // Usar un valor predeterminado si el valor es nulo
@@ -377,10 +378,12 @@ class _MyFormState extends State<MyForm> {
             cantObr: cantO,
             foto: fotosString, // Debes manejar la lógica para las fotos aquí
             datoU: datoUnico,
+            datoC: datoCompartido,
             nombUser: nomUser!, // Aquí debes establecer el nombre del usuario
             lastUpdated: DateTime.now().toIso8601String(),
             idTienda: idTiend, // Aquí debes establecer el ID de la tienda
           );
+          print("NUEVO REPORTE $nuevoReporte");
 
           print("DATOS DEL ARREGLO");
           print("FORMATO $formato");
@@ -397,6 +400,7 @@ class _MyFormState extends State<MyForm> {
           print("OTRO MANO DE OBRA $otroO");
           print("CANTIDAD MANO OBRA $cantO");
           print("DATO UNICO PARA REFERENCIAR $datoUnico");
+          print("DATO COMPARTIDO $datoCompartido");
           print("FOTO $imagePaths");
           print("USUARIO $nomUser");
           print("ID TIENDA $idTiend");
@@ -570,7 +574,7 @@ class _MyFormState extends State<MyForm> {
               children: [
                 Text('Registro de Inspección',
                     style: Theme.of(context).textTheme.headlineMedium),
-                DropdownButtonFormField(
+                /* DropdownButtonFormField(
                   value: selectedFormato,
                   onChanged: (newValue) {
                     setState(() {
@@ -587,7 +591,7 @@ class _MyFormState extends State<MyForm> {
                   decoration: const InputDecoration(
                       labelText:
                           'Selecciona el formato de tu defecto (F1 o F2)'),
-                ),
+                ), */
                 TextFormField(
                   controller: _departamentoController,
                   autovalidateMode: AutovalidateMode.onUserInteraction,

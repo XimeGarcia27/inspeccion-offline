@@ -535,18 +535,18 @@ class DatabaseHelper {
     final Set<String> reportesExistente = <String>{};
 
     // Iterar sobre los reportes y realizar la inserción o actualización en PostgreSQL
-    for (final reporte in reportes) {
-      // Verificar si el reporte ya existe en PostgreSQL
-      if (!reportesExistente.contains(reporte.datoU)) {
+    try {
+      for (final reporte in reportes) {
+        // Verificar si el reporte ya existe en PostgreSQL
+        /* if (!reportesExistente.contains(reporte.datoU)) {
         // Marcar el reporte como existente para evitar duplicados
-        reportesExistente.add(reporte.datoU!);
+        reportesExistente.add(reporte.datoU!); */
 
         // Realizar la consulta para verificar la existencia del reporte
         final result = await connection.query(
           'SELECT * FROM reportes WHERE dato_unico = @datoUnico',
           substitutionValues: {'datoUnico': reporte.datoU},
         );
-        print("EL DATO YA EXISTE");
 
         if (result.isNotEmpty) {
           print("EL DATO SE ACTUALIZARA");
@@ -581,8 +581,8 @@ class DatabaseHelper {
           print("EL DATO SE INSERTARA");
 
           await connection.query(
-            'INSERT INTO reportes (formato, nom_dep, clave_ubi, id_probl, nom_probl, id_mat, nom_mat, otro, cant_mat, id_obr, nom_obr, otro_obr, cant_obr, foto, dato_unico, nom_user, last_updated, id_tienda)'
-            'VALUES (@formato, @valorDepartamento, @valorUbicacion, @idProbl, @nomProbl, @idMat, @nomMat, @otro, @cantM, @idObra, @nomObr, @otroObr, @cantO, @foto, @datoUnico, @nomUser, @lastUpdated, @idTiend)',
+            'INSERT INTO reportes (formato, nom_dep, clave_ubi, id_probl, nom_probl, id_mat, nom_mat, otro, cant_mat, id_obr, nom_obr, otro_obr, cant_obr, foto, dato_unico, dato_comp, nom_user, last_updated, id_tienda)'
+            'VALUES (@formato, @valorDepartamento, @valorUbicacion, @idProbl, @nomProbl, @idMat, @nomMat, @otro, @cantM, @idObra, @nomObr, @otroObr, @cantO, @foto, @datoUnico, @datoCompartido, @nomUser, @lastUpdated, @idTiend)',
             substitutionValues: {
               'formato': reporte.formato,
               'valorDepartamento': reporte.nomDep,
@@ -599,6 +599,7 @@ class DatabaseHelper {
               'cantO': reporte.cantObr,
               'foto': reporte.foto,
               'datoUnico': reporte.datoU,
+              'datoCompartido': reporte.datoC,
               'nomUser': reporte.nombUser,
               'lastUpdated': reporte.lastUpdated,
               'idTiend': reporte.idTienda,
@@ -606,8 +607,13 @@ class DatabaseHelper {
           );
           print("Reporte insertado correctamente");
         }
-      } else {
+        /* } else {
         print("El reporte con dato único ${reporte.datoU} ya se ha procesado");
+      } */
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error al insertar el reporte online $e');
       }
     }
 

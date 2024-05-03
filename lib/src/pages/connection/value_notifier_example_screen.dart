@@ -1,4 +1,3 @@
-import 'package:app_inspections/main.dart';
 import 'package:app_inspections/src/pages/connection/warning_widget_value_notifier.dart';
 import 'package:app_inspections/src/pages/inicio_inspeccion.dart';
 import 'package:flutter/material.dart';

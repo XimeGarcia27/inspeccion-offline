@@ -1,10 +1,10 @@
-import 'package:app_inspections/main.dart';
 import 'package:app_inspections/models/mano_obra.dart';
 import 'package:app_inspections/models/materiales.dart';
 import 'package:app_inspections/models/models.dart';
 import 'package:app_inspections/models/problemas.dart';
 import 'package:app_inspections/models/reporte_model.dart';
 import 'package:app_inspections/models/usuarios.dart';
+import 'package:app_inspections/services/subir_online.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 // ignore: depend_on_referenced_packages
@@ -34,7 +34,7 @@ class DatabaseProvider {
           "CREATE TABLE usuarios (id_usu INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, nombre TEXT NOT NULL, nom_usu TEXT NOT NULL, password TEXT NOT NULL);");
       //creación de tabla reporte
       await db.execute(
-          "CREATE TABLE reporte (id_rep INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, formato TEXT NOT NULL, nom_dep TEXT NOT NULL, clave_ubi TEXT NOT NULL, id_probl INTEGER, nom_probl TEXT, id_mat INTEGER, nom_mat TEXT, otro TEXT, cant_mat INTEGER, id_obra INTEGER, nom_obr TEXT, otro_obr TEXT, cant_obr INTEGER, foto TEXT, dato_unico TEXT NOT NULL, insertion TIMESTAMP DEFAULT CURRENT_TIMESTAMP, nom_user TEXT NOT NULL, last_updated DATETIME, id_tienda INTEGER NOT NULL,"
+          "CREATE TABLE reporte (id_rep INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, formato TEXT NOT NULL, nom_dep TEXT NOT NULL, clave_ubi TEXT NOT NULL, id_probl INTEGER, nom_probl TEXT, id_mat INTEGER, nom_mat TEXT, otro TEXT, cant_mat INTEGER, id_obra INTEGER, nom_obr TEXT, otro_obr TEXT, cant_obr INTEGER, foto TEXT, dato_unico TEXT NOT NULL, dato_comp TEXT NOT NULL, insertion TIMESTAMP DEFAULT CURRENT_TIMESTAMP, nom_user TEXT NOT NULL, last_updated DATETIME, id_tienda INTEGER NOT NULL,"
           "FOREIGN KEY (id_probl) REFERENCES problemas(id_probl),"
           "FOREIGN KEY (id_mat) REFERENCES materiales(id_mat),"
           "FOREIGN KEY (id_obra) REFERENCES obra(id_obra),"
@@ -96,27 +96,6 @@ class DatabaseProvider {
       return -1; // Retornar un valor indicando un error, por ejemplo, -1
     }
   }
-
-  //método para mostrar la lista de problemas para el form
-  /* static Future<List<Problemas>> showProblemas() async {
-    Database database = await openDB();
-    try {
-      final List<Map<String, dynamic>> results =
-          await database.rawQuery('SELECT * FROM problemas');
-
-      return results
-          .map((row) => Problemas(
-                id: row['id_probl'],
-                nombre: row['nom_probl'],
-                codigo: row['cod_probl'],
-                formato: row['formato'],
-              ))
-          .toList();
-    } catch (e) {
-      print('Error al ejecutar la consulta: $e');
-      return [];
-    }
-  } */
 
   static Future<List<Problemas>> showProblemas() async {
     Database database = await openDB();
@@ -241,6 +220,7 @@ class DatabaseProvider {
                 cantObr: row['cant_obr'],
                 foto: row['foto'],
                 datoU: row['dato_unico'],
+                datoC: row['dato_comp'],
                 nombUser: row['nom_user'],
                 lastUpdated: row['last_updated'],
                 idTienda: row['id_tienda'],
@@ -290,6 +270,57 @@ class DatabaseProvider {
                 cantObr: row['cant_obr'],
                 foto: row['foto'],
                 datoU: row['dato_unico'],
+                datoC: row['dato_comp'],
+                nombUser: row['nom_user'],
+                lastUpdated: row['lastUpdated'],
+                idTienda: row['id_tienda'],
+              ))
+          .toList();
+    } catch (e) {
+      const Text('Comprueba tu conexión a internet');
+      return [];
+    } finally {
+      try {
+        await database.query('DEALLOCATE ALL');
+        //await database.close();
+      } catch (e) {
+        if (kDebugMode) {
+          print('Error al cerrar la conexión: $e');
+        }
+      }
+    }
+  }
+
+  static Future<List<Reporte>> mostrarReporteF2(int idtienda) async {
+    Database database = await openDB();
+    try {
+      final List<Map<String, dynamic>> results = await database.rawQuery(
+        "SELECT * FROM reporte WHERE id_tienda = ? AND formato = 'F2'",
+        [idtienda],
+      );
+      //print('despues de la consulta');
+      if (kDebugMode) {
+        print('Resultados de la consulta: $results');
+      }
+
+      return results
+          .map((row) => Reporte(
+                formato: row['formato'],
+                nomDep: row['nom_dep'],
+                claveUbi: row['clave_ubi'],
+                idProbl: row['id_probl'],
+                nomProbl: row['nom_probl'],
+                idMat: row['id_mat'],
+                nomMat: row['nom_mat'],
+                otro: row['otro'],
+                cantMat: row['cant_mat'],
+                idObr: row['id_obra'],
+                nomObr: row['nom_obr'],
+                otroObr: row['otro_obr'],
+                cantObr: row['cant_obr'],
+                foto: row['foto'],
+                datoU: row['dato_unico'],
+                datoC: row['dato_comp'],
                 nombUser: row['nom_user'],
                 lastUpdated: row['lastUpdated'],
                 idTienda: row['id_tienda'],
@@ -317,7 +348,7 @@ class DatabaseProvider {
 
     // Ejecutar una consulta para obtener los datos de la tabla 'reporte'
     final resultados = await database.query('reporte');
-    print("REPORTES EN MI BD LOCAL $resultados");
+    //print("REPORTES EN MI BD LOCAL $resultados");
 
     // Mapear los resultados a objetos Reporte
     final reportes = resultados.map((row) => Reporte.fromMap(row)).toList();

@@ -189,9 +189,24 @@ class _FormReporteState extends State<FormReporte> {
   //controller de los campos
   final TextEditingController _departamentoController = TextEditingController();
   final TextEditingController _ubicacionController = TextEditingController();
+  List<dynamic> listaDatos = [];
+
+  void _guardar() {
+    final datos =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
+    setState(() {
+      listaDatos.add(datos);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final datos = ModalRoute.of(context)?.settings.arguments;
+    print("DATOOOS $datos");
+
+    // Verificar si hay datos disponibles
+    bool datosDisponibles = datos != null && datos is Map<String, dynamic>;
+
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 30),
@@ -259,28 +274,37 @@ class _FormReporteState extends State<FormReporte> {
                 const SizedBox(
                   height: 20,
                 ),
-                const Card(
-                  //margin: EdgeInsets.all(1),
-                  color: Color.fromARGB(255, 255, 255, 255),
-                  shadowColor: Color.fromARGB(255, 193, 194, 194),
-                  elevation: 14,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      ListTile(
-                        title: Text(
-                          "Defecto",
-                          style: TextStyle(fontSize: 20),
-                        ),
-                        subtitle: Text('Mano de Obra'),
-                        trailing: Icon(
-                          Icons.edit,
-                          color: Color.fromARGB(255, 10, 38, 129),
-                        ),
-                      ),
-                    ],
+                /*  */
+                if (datosDisponibles)
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: listaDatos.length,
+                      itemBuilder: (context, index) {
+                        final registro = listaDatos[index];
+                        print("REGISTROS $registro");
+                        return Card(
+                          color: const Color.fromARGB(255, 255, 255, 255),
+                          shadowColor: const Color.fromARGB(255, 193, 194, 194),
+                          elevation: 14,
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Datos del Defecto:',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                Text('Defecto: ${registro['nombreP']}'),
+                                Text('Mano de Obra: ${registro['nombreM']}'),
+                                // Agregar otros campos si es necesario
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
                 const SizedBox(
                   height: 20,
                 ),
@@ -320,12 +344,13 @@ class _FormReporteState extends State<FormReporte> {
                     ),
                   ],
                 ),
-                SizedBox(
+                const SizedBox(
                   height: 70,
                 ),
                 ElevatedButton(
                   onPressed: () {
                     //guardarDatosConConfirmacion(context);
+                    _guardar();
                   }, // Desactiva el botón si isGuardarHabilitado es falso
                   key: null,
                   style: ElevatedButton.styleFrom(

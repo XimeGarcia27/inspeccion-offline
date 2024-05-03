@@ -1,12 +1,11 @@
 import 'package:app_inspections/models/mano_obra.dart';
 import 'package:app_inspections/models/materiales.dart';
 import 'package:app_inspections/models/problemas.dart';
-import 'package:app_inspections/models/reporte_model.dart';
 import 'package:app_inspections/models/tiendas.dart';
 import 'package:app_inspections/models/usuarios.dart';
 import 'package:app_inspections/services/auth_service.dart';
-import 'package:app_inspections/services/db_offline.dart';
 import 'package:app_inspections/services/db_online.dart';
+import 'package:app_inspections/services/subir_online.dart';
 import 'package:app_inspections/src/pages/agregarDefectos.dart';
 import 'package:app_inspections/src/pages/f1.dart';
 import 'package:app_inspections/src/pages/inicio_indv.dart';
@@ -39,36 +38,18 @@ void main() async {
   //llamar a la funcion para insertar datos iniciales de usuarios
   insertInitialDataUser();
   //llamar a la funcion para insertar datos del reporte cuando hay internet
-  //insertarReporteOnline();
+
+  insertarReporteOnline();
 
   dbHelper = DatabaseHelper();
+
+  // ignore: unused_element
 
   runApp(AppState(
     dbHelper: dbHelper,
   ));
 
   return;
-}
-
-Future<void> insertarReporteOnline(
-    // Parámetros del reporte
-    ) async {
-  try {
-    // Verificar si hay conexión a Internets
-    final connectionStatus = await internetChecker.internetStatus().first;
-    if (connectionStatus == ConnectionStatus.online) {
-      print("CONEXION ACTIVA");
-      // Si hay conexión, obtener los reportes locales
-      final List<Reporte> reportes =
-          await DatabaseProvider.leerReportesDesdeSQLite();
-
-      // Sincronizar los reportes locales con la base de datos remota
-      await DatabaseHelper.sincronizarConPostgreSQL(reportes);
-      print("SE INSERTO EL DATO EN POSTGRE $reportes");
-    }
-  } catch (e) {
-    print("No se pudo insertar el reporte online");
-  }
 }
 
 class NotificationsServices {

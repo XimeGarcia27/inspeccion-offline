@@ -4,6 +4,7 @@ import 'package:app_inspections/models/problemas.dart';
 import 'package:app_inspections/services/db_offline.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:uuid/uuid.dart';
 
 class Defectos extends StatelessWidget {
   const Defectos({super.key});
@@ -32,6 +33,8 @@ class _AgregarDefectoState extends State<AgregarDefecto> {
   int idObra = 0;
 
   String formato = "";
+
+  late final Function(Map<String, dynamic>) onAgregarDatos;
 
   //controller del formulario
   final TextEditingController _idproblController = TextEditingController();
@@ -113,6 +116,12 @@ class _AgregarDefectoState extends State<AgregarDefecto> {
       _idobraController.text = idObra.toString();
       idObra = idObraSeleccionado;
     });
+  }
+
+  // Función para generar un ID único que aumenta en uno cada vez
+  String generateUniqueId() {
+    var uuid = const Uuid();
+    return uuid.v4();
   }
 
   @override
@@ -479,7 +488,40 @@ class _AgregarDefectoState extends State<AgregarDefecto> {
                     height: 30,
                   ),
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      String cantidadM = _cantmatController.text;
+                      String cantidadO = _cantobraController.text;
+                      String nomProbl = _textEditingControllerProblema.text;
+                      String nomMat = _textEditingControllerMaterial.text;
+                      String nomObra = _textEditingControllerObra.text;
+                      String otro = _otroMPController.text;
+                      String otroO = _otroObraController.text;
+                      String datoUnico = generateUniqueId();
+                      int cantM = 0;
+                      int cantO = 0;
+
+                      if (cantidadM.isNotEmpty) {
+                        cantM = int.tryParse(cantidadM) ?? 0;
+                      }
+
+                      if (cantidadO.isNotEmpty) {
+                        cantO = int.tryParse(cantidadO) ?? 0;
+                      }
+                      // Enviar datos al formulario principal
+                      Navigator.of(context).popAndPushNamed(
+                        'prueba',
+                        arguments: {
+                          'nombreP': nomProbl,
+                          'nombreM': nomMat,
+                          'otroM': otro,
+                          'cantM': cantM,
+                          'nombreO': nomObra,
+                          'otroO': otroO,
+                          'cantO': cantO,
+                          'datoUnico': datoUnico
+                        },
+                      );
+                    },
                     key: null,
                     style: ElevatedButton.styleFrom(
                       foregroundColor: Colors.white,
