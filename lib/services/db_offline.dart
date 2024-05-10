@@ -1,3 +1,4 @@
+import 'package:app_inspections/models/images_model.dart';
 import 'package:app_inspections/models/mano_obra.dart';
 import 'package:app_inspections/models/materiales.dart';
 import 'package:app_inspections/models/models.dart';
@@ -32,6 +33,10 @@ class DatabaseProvider {
       //creación de tabla usuariosA
       await db.execute(
           "CREATE TABLE usuarios (id_usu INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, nombre TEXT NOT NULL, nom_usu TEXT NOT NULL, password TEXT NOT NULL);");
+
+      //tabla de imagenes
+      await db.execute(
+          "CREATE TABLE images (id_img INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, imagen TEXT, dato_unico_rep TEXT NOT NULL, id_tienda TEXT NOT NULL);");
       //creación de tabla reporte
       await db.execute(
           "CREATE TABLE reporte (id_rep INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, formato TEXT NOT NULL, nom_dep TEXT NOT NULL, clave_ubi TEXT NOT NULL, id_probl INTEGER, nom_probl TEXT, id_mat INTEGER, nom_mat TEXT, otro TEXT, cant_mat INTEGER, id_obra INTEGER, nom_obr TEXT, otro_obr TEXT, cant_obr INTEGER, foto TEXT, dato_unico TEXT NOT NULL, dato_comp TEXT NOT NULL, insertion TIMESTAMP DEFAULT CURRENT_TIMESTAMP, nom_user TEXT NOT NULL, last_updated DATETIME, id_tienda INTEGER NOT NULL,"
@@ -95,6 +100,28 @@ class DatabaseProvider {
       print("NO SE PUDO INSERTAR EL REPORTE");
       return -1; // Retornar un valor indicando un error, por ejemplo, -1
     }
+  }
+
+  //método para insertar imagenes en local
+  static Future<Future<int>> insertImagenes(Images imagen) async {
+    Database database = await openDB();
+
+    return database.insert("images", imagen.toMap());
+  }
+
+  Future<void> editarReporte(Reporte reporte) async {
+    Database database = await openDB();
+
+    // Ejecutar la consulta UPDATE
+    await (database).update(
+      'reportes',
+      {'valor': reporte.nomDep},
+      where: 'id = ?',
+      whereArgs: [reporte.nomDep],
+    );
+
+    // Cerrar la conexión
+    await (await database).close();
   }
 
   static Future<List<Problemas>> showProblemas() async {
@@ -183,6 +210,68 @@ class DatabaseProvider {
                 codigo: row['cod_tienda'],
                 nombre: row['nom_tienda'],
                 distrito: row['dist_tienda'],
+              ))
+          .toList();
+    } catch (e) {
+      print('Error al ejecutar la consulta: $e');
+      return [];
+    }
+  }
+
+  static Future<List<Problemas>> obtenerDefectoPorId(int query) async {
+    Database database = await openDB();
+    try {
+      final List<Map<String, dynamic>> results = await database.rawQuery(
+        'SELECT * FROM problemas WHERE id_probl = ?',
+        [query],
+      );
+
+      return results
+          .map((row) => Problemas(
+                id: row['id_probl'],
+                nombre: row['nom_probl'],
+                codigo: row['cod_probl'],
+                formato: row['formato'],
+              ))
+          .toList();
+    } catch (e) {
+      print('Error al ejecutar la consulta: $e');
+      return [];
+    }
+  }
+
+  static Future<List<Materiales>> obtenerMaterialPorId(int query) async {
+    Database database = await openDB();
+    try {
+      final List<Map<String, dynamic>> results = await database.rawQuery(
+        'SELECT * FROM materiales WHERE id_mat = ?',
+        [query],
+      );
+
+      return results
+          .map((row) => Materiales(
+                id: row['id_mat'],
+                nombre: row['nom_mat'],
+              ))
+          .toList();
+    } catch (e) {
+      print('Error al ejecutar la consulta: $e');
+      return [];
+    }
+  }
+
+  static Future<List<Obra>> obtenerObraPorId(int query) async {
+    Database database = await openDB();
+    try {
+      final List<Map<String, dynamic>> results = await database.rawQuery(
+        'SELECT * FROM obra WHERE id_obra = ?',
+        [query],
+      );
+
+      return results
+          .map((row) => Obra(
+                id: row['id_obra'],
+                nombre: row['nom_obra'],
               ))
           .toList();
     } catch (e) {
@@ -358,5 +447,24 @@ class DatabaseProvider {
     //await database.close();
 
     return reportes;
+  }
+
+  //leer fotos para subirlas a postgre y a firebase
+  static Future<List<Images>> leerFotosDesdeSQLite() async {
+    // Abrir la conexión a la base de datos SQLite
+    Database database = await openDB();
+
+    // Ejecutar una consulta para obtener los datos de la tabla 'reporte'
+    final resultados = await database.query('images');
+    //print("REPORTES EN MI BD LOCAL $resultados");
+
+    // Mapear los resultados a objetos Reporte
+    final imagenes = resultados.map((row) => Images.fromMap(row)).toList();
+    print("Imagenes EN MI BD LOCAL $imagenes");
+
+    //Cerrar la conexión a la base de datos
+    //await database.close();
+
+    return imagenes;
   }
 }

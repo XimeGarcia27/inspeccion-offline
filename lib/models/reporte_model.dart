@@ -1,4 +1,5 @@
 class Reporte {
+  int? idReporte;
   String? formato;
   String? nomDep;
   String? claveUbi;
@@ -20,6 +21,7 @@ class Reporte {
   int? idTienda;
 
   Reporte({
+    this.idReporte,
     this.formato,
     this.nomDep,
     this.claveUbi,
@@ -43,6 +45,7 @@ class Reporte {
 
   Map<String, dynamic> toMap() {
     return {
+      'id_rep': idReporte,
       'formato': formato,
       'nom_dep': nomDep,
       'clave_ubi': claveUbi,
@@ -67,6 +70,7 @@ class Reporte {
 
   factory Reporte.fromMap(Map<String, dynamic> map) {
     return Reporte(
+      idReporte: map['id_rep'] ?? "",
       formato: map['formato'] ?? "",
       nomDep: map['nom_dep'] ?? "",
       claveUbi: map['clave_ubi'] ?? "",

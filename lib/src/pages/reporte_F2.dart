@@ -1,5 +1,6 @@
+import 'package:app_inspections/models/reporte_model.dart';
 import 'package:app_inspections/services/auth_service.dart';
-import 'package:app_inspections/services/db_online.dart';
+import 'package:app_inspections/services/db_offline.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
@@ -18,14 +19,14 @@ class ReporteF2Screen extends StatelessWidget {
       {Key? key, required this.idTienda, required this.nomTienda})
       : super(key: key);
 
-  Future<List<Map<String, dynamic>>> _cargarReporte(int idTienda) async {
-    DatabaseHelper databaseHelper = DatabaseHelper();
-    return databaseHelper.mostrarReporteF2(idTienda);
+  Future<List<Reporte>> _cargarReporte(int idTienda) async {
+    //DatabaseProvider databaseProvider = DatabaseProvider();
+    return DatabaseProvider.mostrarReporteF2(idTienda);
   }
 
   void _descargarPDF(BuildContext context, String? user) async {
     // Obtener los datos del informe
-    List<Map<String, dynamic>> datos = await _cargarReporte(idTienda);
+    List<Reporte> datos = await _cargarReporte(idTienda);
     print("DATOS DE REPORTEE $datos");
 
     // Generar el PDF
@@ -78,7 +79,7 @@ class ReporteF2Widget extends StatefulWidget {
 }
 
 Future<File> generatePDF(
-    List<Map<String, dynamic>> data, String nomTiend, String? user) async {
+    List<Reporte> data, String nomTiend, String? user) async {
   final pdfWidgets.Font customFont = pdfWidgets.Font.ttf(
     await rootBundle.load('assets/fonts/OpenSans-Italic.ttf'),
   );
@@ -101,8 +102,7 @@ Future<File> generatePDF(
         ? startIndex + itemsPerPage
         : data.length;
     // Obtener los datos de la página actual
-    final List<Map<String, dynamic>> pageData =
-        data.sublist(startIndex, endIndex);
+    final List<Reporte> pageData = data.sublist(startIndex, endIndex);
 
     final Uint8List backgroundImageData =
         await _loadImageData('assets/portada1.png');
@@ -210,10 +210,10 @@ Future<File> generatePDF(
                 ],
                 for (var row in pageData)
                   [
-                    row['nom_dep'].toString(),
-                    row['clave_ubi'].toString(),
+                    row.nomDep.toString(),
+                    row.claveUbi.toString(),
                     pdfWidgets.Text(
-                      row['nom_probl'].toString(),
+                      row.nomProbl.toString(),
                       style: pdfWidgets.TextStyle(
                         font: customFont, // Usa la fuente personalizada aquí
                         fontSize: 12,
@@ -221,16 +221,16 @@ Future<File> generatePDF(
                       ),
                     ),
                     pdfWidgets.Text(
-                      row['nom_mat'].toString(),
+                      row.nomMat.toString(),
                       style: pdfWidgets.TextStyle(
                         font: customFont, // Usa la fuente personalizada aquí
                         fontSize: 12,
                         color: PdfColors.black,
                       ),
                     ),
-                    row['cant_mat'].toString(),
-                    row['nom_obr'].toString(),
-                    row['cant_obr'].toString(),
+                    row.cantMat.toString(),
+                    row.nomObr.toString(),
+                    row.cantObr.toString(),
                   ]
               ],
               border: pdfWidgets.TableBorder.all(
@@ -272,7 +272,7 @@ Future<Uint8List> _loadImageData(String imagePath) async {
 }
 
 class _ReporteWidgetState extends State<ReporteF2Widget> {
-  late Future<List<Map<String, dynamic>>> _futureReporte;
+  late Future<List<Reporte>> _futureReporte;
   String datounico = "";
 
   @override
@@ -281,9 +281,9 @@ class _ReporteWidgetState extends State<ReporteF2Widget> {
     _futureReporte = _cargarReporte(widget.idTienda);
   }
 
-  Future<List<Map<String, dynamic>>> _cargarReporte(int idTienda) async {
-    DatabaseHelper databaseHelper = DatabaseHelper();
-    return databaseHelper.mostrarReporteF2(widget.idTienda);
+  Future<List<Reporte>> _cargarReporte(int idTienda) async {
+    //DatabaseProvider databaseProvider = DatabaseProvider();
+    return DatabaseProvider.mostrarReporteF2(idTienda);
   }
 
   @override
@@ -298,7 +298,7 @@ class _ReporteWidgetState extends State<ReporteF2Widget> {
           } else if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           } else {
-            List<Map<String, dynamic>> datos = snapshot.data!;
+            List<Reporte> datos = snapshot.data!;
             return ListView(children: [
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
@@ -362,64 +362,65 @@ class _ReporteWidgetState extends State<ReporteF2Widget> {
                     )),
                   ],
                   rows: datos.map((dato) {
-                    datounico = dato['dato_unico'];
+                    datounico = dato.foto!;
                     return DataRow(
                       cells: [
                         DataCell(
-                          Text('${dato['nom_dep']}'),
+                          Text(dato.nomDep ?? ''),
                         ),
                         DataCell(
-                          Text('${dato['clave_ubi']}'),
-                        ),
-                        DataCell(
-                          Container(
-                            width: (MediaQuery.of(context).size.width / 10) * 3,
-                            padding: const EdgeInsets.all(3),
-                            child: Center(child: Text('${dato['nom_probl']}')),
-                          ),
+                          Text(dato.claveUbi ?? ''),
                         ),
                         DataCell(
                           Container(
                             width: (MediaQuery.of(context).size.width / 10) * 3,
                             padding: const EdgeInsets.all(3),
-                            child: Text('${dato['nom_mat']}'),
+                            child: Center(child: Text(dato.nomProbl ?? '')),
+                          ),
+                        ),
+                        DataCell(
+                          Container(
+                            width: (MediaQuery.of(context).size.width / 10) * 3,
+                            padding: const EdgeInsets.all(3),
+                            child: Text(dato.nomMat ?? ''),
                           ),
                         ),
                         DataCell(
                           Container(
                             padding: const EdgeInsets.all(3),
-                            child: Center(child: Text('${dato['otro']}')),
+                            child: Center(child: Text(dato.otro ?? '')),
                           ),
                         ),
                         DataCell(
                           Container(
                             padding: const EdgeInsets.all(3),
-                            child: Text('${dato['cant_mat']}'),
+                            child: Text('${dato.cantMat}'),
                           ),
                         ),
                         DataCell(
                           Container(
                             padding: const EdgeInsets.all(3),
-                            child: Text('${dato['nom_obr']}'),
+                            child: Text(dato.nomObr ?? ''),
                           ),
                         ),
                         DataCell(
                           Container(
                             padding: const EdgeInsets.all(3),
-                            child: Text('${dato['otro_obr']}'),
+                            child: Text(dato.otroObr ?? ''),
                           ),
                         ),
                         DataCell(
                           Container(
                             padding: const EdgeInsets.all(3),
-                            child: Text('${dato['cant_obr']}'),
+                            child: Text('${dato.cantObr}'),
                           ),
                         ),
                         DataCell(
                           SizedBox(
                             width: 500,
                             child: Row(
-                              children: dato['foto'].map<Widget>((url) {
+                              children:
+                                  dato.foto!.split(",").map<Widget>((url) {
                                 return Padding(
                                   padding: const EdgeInsets.all(4),
                                   child: InkWell(
@@ -428,30 +429,40 @@ class _ReporteWidgetState extends State<ReporteF2Widget> {
                                       showDialog(
                                         context: context,
                                         builder: (context) => AlertDialog(
-                                          content: Image.network(
-                                            url,
+                                          content: Image.file(
+                                            File(url
+                                                .trim()), // Elimina espacios en blanco y carga la imagen
                                             errorBuilder:
                                                 (context, error, stackTrace) {
                                               // Manejar el error y mostrar una imagen de respaldo
                                               return Image.asset(
-                                                  'assets/no_image.png');
+                                                'assets/no_image.png',
+                                                width: 70,
+                                                height: 70,
+                                              );
                                             },
-                                            fit: BoxFit
-                                                .contain, // Ajusta la imagen al tamaño del contenedor
+                                            width: 70,
+                                            height: 70,
+                                            fit: BoxFit.cover,
                                           ),
                                         ),
                                       );
                                     },
-                                    child: Image.network(
-                                      url,
+                                    child: Image.file(
+                                      File(url
+                                          .trim()), // Elimina espacios en blanco y carga la imagen
                                       errorBuilder:
                                           (context, error, stackTrace) {
                                         // Manejar el error y mostrar una imagen de respaldo
                                         return Image.asset(
-                                            'assets/no_image.png',
-                                            width: 70,
-                                            height: 70);
+                                          'assets/no_image.png',
+                                          width: 70,
+                                          height: 70,
+                                        );
                                       },
+                                      width: 70,
+                                      height: 70,
+                                      fit: BoxFit.cover,
                                     ),
                                   ),
                                 );
@@ -467,22 +478,6 @@ class _ReporteWidgetState extends State<ReporteF2Widget> {
             ]);
           }
         },
-      ),
-    );
-  }
-}
-
-class ImageViewScreen extends StatelessWidget {
-  final File image;
-
-  const ImageViewScreen({Key? key, required this.image}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Image')),
-      body: Center(
-        child: Image.file(image),
       ),
     );
   }

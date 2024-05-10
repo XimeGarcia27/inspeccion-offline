@@ -5,6 +5,7 @@ import 'package:app_inspections/models/tiendas.dart';
 import 'package:app_inspections/models/usuarios.dart';
 import 'package:app_inspections/services/auth_service.dart';
 import 'package:app_inspections/services/db_online.dart';
+import 'package:app_inspections/services/sincronizarBd.dart';
 import 'package:app_inspections/services/subir_online.dart';
 import 'package:app_inspections/src/pages/agregarDefectos.dart';
 import 'package:app_inspections/src/pages/f1.dart';
@@ -41,13 +42,22 @@ void main() async {
 
   insertarReporteOnline();
 
+  insertarImagenesOnline();
+
   dbHelper = DatabaseHelper();
 
-  // ignore: unused_element
-
-  runApp(AppState(
-    dbHelper: dbHelper,
-  ));
+  // Aquí puedes llamar a la función de transferencia de datos
+  transferirDePostgreSQLASQLite().then((_) {
+    runApp(AppState(
+      dbHelper: dbHelper,
+    ));
+  }).catchError((error) {
+    print('Error al transferir datos al instalar la aplicación: $error');
+    // Continuar con la ejecución de la aplicación incluso si hay un error en la transferencia de datos
+    runApp(AppState(
+      dbHelper: dbHelper,
+    ));
+  });
 
   return;
 }

@@ -1,20 +1,21 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:app_inspections/main.dart';
 import 'package:app_inspections/models/mano_obra.dart';
 import 'package:app_inspections/models/materiales.dart';
 import 'package:app_inspections/models/problemas.dart';
 import 'package:app_inspections/models/reporte_model.dart';
 import 'package:app_inspections/services/db_offline.dart';
+import 'package:app_inspections/services/db_online.dart';
 import 'package:app_inspections/services/photo_services.dart';
 import 'package:app_inspections/src/pages/utils/check_internet_connection.dart';
-import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:app_inspections/services/auth_service.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:app_inspections/services/functions.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -210,49 +211,61 @@ class _MyFormState extends State<MyForm> {
       );
       return; // Salir del método si se alcanza el límite de fotos
     }
+
+    var cameraPermissionStatus = await Permission.camera.request();
+    if (cameraPermissionStatus != PermissionStatus.granted) {
+      // El usuario denegó el permiso de la cámara, mostrar un mensaje o realizar una acción apropiada
+      return;
+    }
+
     final XFile? image = await _picker.pickImage(source: ImageSource.camera);
     if (image != null) {
       setState(() {
         images.add(image);
       });
-      // Guardar la imagen en algún lugar del dispositivo
-      final Directory directory = await getApplicationDocumentsDirectory();
-      String imagePath =
-          '${directory.path}/foto_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final File imageFile = File(imagePath);
-      await imageFile.writeAsBytes(await image.readAsBytes());
 
-      // Agregar la ruta de la imagen a la lista
-      setState(() {
-        imagePaths.add(imagePath);
-      });
+      try {
+        String? imageUrl =
+            await FirebaseStorageService.uploadImage(File(image.path));
+        if (imageUrl != null) {
+          storeImageUrl(imageUrl); // Guardar URL de imagen
+          print('La imagen se ha subido a la base de datos de Postgre.');
+        }
+
+        final Directory directory = await getApplicationDocumentsDirectory();
+        String imagePath =
+            '${directory.path}/foto_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final File imageFile = File(imagePath);
+        await imageFile.writeAsBytes(await image.readAsBytes());
+
+        // Agregar la ruta de la imagen a la lista
+        setState(() {
+          imagePaths.add(imagePath);
+        });
+      } catch (e) {
+        print("No se pudo insertar el reporte online $e");
+      }
     }
   }
 
-  void deleteImageLocally(String imagePath) async {
-    try {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      List<String> imagePaths = prefs.getStringList('imagePaths') ?? [];
-
-      // Eliminar la ruta de la imagen del almacenamiento local
-      imagePaths.remove(imagePath);
-      await prefs.setStringList('imagePaths', imagePaths);
-    } catch (e) {
-      print('Error al eliminar la imagen localmente: $e');
-    }
+  void storeImageUrl(String url) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String>? storedUrls = prefs.getStringList('imageUrls') ?? [];
+    storedUrls.add(url);
+    await prefs.setStringList('imageUrls', storedUrls);
   }
 
-  Future<void> deleteImageFromStorage(String imageUrl) async {
-    try {
-      print(
-          'Intentando eliminar la imagen de Firebase Storage. URL: $imageUrl');
-      firebase_storage.Reference storageRef =
-          firebase_storage.FirebaseStorage.instance.refFromURL(imageUrl);
-      await storageRef.delete();
-      print('Imagen eliminada de Firebase Storage correctamente.');
-    } catch (e) {
-      print('Error al eliminar la imagen de Firebase Storage: $e');
-    }
+  void _removeImage(int index) {
+    setState(() {
+      // Elimina la imagen de la lista de imágenes
+      images.removeAt(index);
+
+      // Elimina la ruta de la imagen de la lista de rutas de imágenes
+      String imagePathToRemove = imagePaths[index];
+      File(imagePathToRemove).deleteSync();
+      imagePaths.removeAt(index);
+      print("IMAGENES DE LA LISTA $imagePaths");
+    });
   }
 
   void handleSelectionMaterial(
@@ -401,7 +414,7 @@ class _MyFormState extends State<MyForm> {
           print("CANTIDAD MANO OBRA $cantO");
           print("DATO UNICO PARA REFERENCIAR $datoUnico");
           print("DATO COMPARTIDO $datoCompartido");
-          print("FOTO $imagePaths");
+          print("FOTO $fotosString");
           print("USUARIO $nomUser");
           print("ID TIENDA $idTiend");
 
@@ -428,10 +441,8 @@ class _MyFormState extends State<MyForm> {
           ); */
 
           //DatabaseProvider.insertReporte(datos);
+          DatabaseHelper.insertarImagenes(fotosString, datoUnico, idTiend);
         }
-
-        /* DatabaseHelper.insertarImagenes(fotos, datoUnico, idTiend); */
-
         _save();
         datosIngresados.clear();
         images.clear();
@@ -556,13 +567,13 @@ class _MyFormState extends State<MyForm> {
     //print("usuariooo $nomUser");
 
     //comparar si se activa la seccion de mano de obra
-    String problema = _textEditingControllerProblema.text.toLowerCase();
-    bool contieneTornillo = problema.contains('tornillo');
+    //String problema = _textEditingControllerProblema.text.toLowerCase();
+    //bool contieneTornillo = problema.contains('tornillo');
     //generar lista de problemas que no llevan foto para activar los demas campos
     //en la bd el campo foto no debe ser requerido, puede ir nulo, configurarlo
-    bool masDeUnaFoto = images.length > 1;
+    //bool masDeUnaFoto = images.length > 1;
 
-    bool activarCampos = contieneTornillo || masDeUnaFoto;
+    //bool activarCampos = contieneTornillo || masDeUnaFoto;
     // if (_currentStatus == ConnectionStatus.offline) {
     return Scaffold(
       body: Padding(
@@ -907,7 +918,7 @@ class _MyFormState extends State<MyForm> {
                 ), */
                 TextFormField(
                   focusNode: _focusNodeObr,
-                  enabled: activarCampos,
+                  //enabled: activarCampos,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: _textEditingControllerObra,
                   onChanged: (String value) async {
@@ -985,7 +996,7 @@ class _MyFormState extends State<MyForm> {
                   ),
                 TextFormField(
                   focusNode: _focusOtO,
-                  enabled: activarCampos,
+                  //enabled: activarCampos,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: _otroObraController,
                   decoration: const InputDecoration(
@@ -1001,7 +1012,7 @@ class _MyFormState extends State<MyForm> {
                 TextFormField(
                   keyboardType: TextInputType.number,
                   focusNode: _cantidadFocus,
-                  enabled: activarCampos,
+                  //enabled: activarCampos,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: _cantobraController,
                   decoration: const InputDecoration(
@@ -1269,10 +1280,10 @@ class _MyFormState extends State<MyForm> {
             right: 0,
             child: GestureDetector(
               onTap: () {
-                setState(() {
+                /* setState(() {
                   images.removeAt(index); // Remueve la imagen de la lista
-                });
-                eliminarImagenDeFirebase(image);
+                }); */
+                _removeImage(index);
               },
               child: const Icon(Icons.cancel_rounded), // Ícono para cancelar
             ),
@@ -1280,22 +1291,5 @@ class _MyFormState extends State<MyForm> {
         ],
       ),
     );
-  }
-
-  // Función para eliminar una foto
-  Future<void> eliminarImagenDeFirebase(XFile imageUrl) async {
-    try {
-      String? imageURL =
-          await FirebaseStorageService.uploadImage(File(imageUrl.path));
-      // Obtener una referencia a la imagen en Firebase Storage
-      Reference imagenRef = FirebaseStorage.instance.refFromURL(imageURL!);
-
-      // Eliminar la imagen de Firebase Storage
-      await imagenRef.delete();
-
-      print('Imagen eliminada de Firebase Storage correctamente');
-    } catch (e) {
-      print('Error al eliminar la imagen de Firebase Storage: $e');
-    }
   }
 }

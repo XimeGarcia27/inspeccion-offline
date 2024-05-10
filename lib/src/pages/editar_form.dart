@@ -1,7 +1,11 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:app_inspections/models/mano_obra.dart';
+import 'package:app_inspections/models/materiales.dart';
+import 'package:app_inspections/models/problemas.dart';
 import 'package:app_inspections/services/auth_service.dart';
 import 'package:app_inspections/services/db.dart';
+import 'package:app_inspections/services/db_offline.dart';
 import 'package:app_inspections/services/functions.dart';
 import 'package:app_inspections/src/pages/connection/no_internet.dart';
 import 'package:app_inspections/src/pages/utils/check_internet_connection.dart';
@@ -16,6 +20,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 class EditarForm extends StatelessWidget {
   final int idTienda;
   final Map<String, dynamic> data;
+
   final String nombreTienda;
   const EditarForm(
       {super.key,
@@ -26,6 +31,7 @@ class EditarForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context, listen: false);
+    print("DATAAAA $data");
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 100,
@@ -117,7 +123,7 @@ class _EditMyFormState extends State<EditMyForm> {
   bool _isLoading = true;
 
   bool _isButtonDisabled = true;
-  List<String> fotos = [];
+  String fotos = "";
 
   @override
   void initState() {
@@ -129,16 +135,24 @@ class _EditMyFormState extends State<EditMyForm> {
         _currentStatus = status;
       });
     });
+    idReporte = widget.data['id_rep'].toString();
     selectedFormato = widget.data['formato'];
     _departamentoController.text = widget.data['nom_dep'];
     _ubicacionController.text = widget.data['clave_ubi'];
     idProbl = widget.data['id_probl'];
     idMat = widget.data['id_mat'];
-    idObra = widget.data['id_obr'];
+    idObra = widget.data['id_obra'];
     _cantmatController.text = widget.data['cant_mat'].toString();
     _cantobraController.text = widget.data['cant_obr'].toString();
-    fotos = widget.data['foto'] as List<String>;
+    _otroMPController.text = widget.data['otro'];
+    _otroObraController.text = widget.data['otro_obr'];
+    fotos = widget.data['foto'];
     _cargarDatosAsync();
+    print("id problema $idProbl");
+    print("id material $idMat");
+    print("id obra $idObra");
+    print("fotos $fotos");
+    print("id reporte $idReporte");
   }
 
   //campos de la base de datos
@@ -188,16 +202,27 @@ class _EditMyFormState extends State<EditMyForm> {
 
   Future<void> editarDefecto() async {
     try {
-      // Llama al método para obtener el defecto por su ID
-      Map<String, dynamic> defecto =
-          await DatabaseHelper().obtenerDefectoPorId(idProbl);
-      if (defecto.isNotEmpty) {
-        // Accede a los datos del defecto
-        _textEditingControllerProblema.text = defecto['nom_probl'];
+      // Llama al método para obtener los defectos por su ID
+      List<Problemas> defectos =
+          await DatabaseProvider.obtenerDefectoPorId(idProbl);
 
-        // Usa los datos como necesites
+      if (defectos.isNotEmpty) {
+        // Itera sobre cada defecto en la lista
+        for (Problemas defecto in defectos) {
+          // Accede a los datos del defecto
+          String nombreProblema = defecto.nombre;
+          String codigoProblema = defecto.codigo;
+          String formatoProblema = defecto.formato;
+          print("nombre problema $nombreProblema");
+
+          _textEditingControllerProblema.text = nombreProblema;
+
+          // Usa los datos como necesites
+          print(
+              'Nombre: $nombreProblema, Código: $codigoProblema, Formato: $formatoProblema');
+        }
       } else {
-        // Manejo si no se encontró el defecto
+        // Manejo si no se encontraron defectos
         if (kDebugMode) {
           print("NO HAY DATOS");
         }
@@ -212,17 +237,22 @@ class _EditMyFormState extends State<EditMyForm> {
 
   Future<void> editarMaterial() async {
     try {
-      // Llama al método para obtener el defecto por su ID
-      Map<String, dynamic> material =
-          await DatabaseHelper().obtenerMaterialPorId(idMat);
-      // Verifica si se encontró el defecto
-      if (material.isNotEmpty) {
-        // Accede a los datos del defecto
-        _textEditingControllerMaterial.text = material['nom_mat'];
+      // Llama al método para obtener los defectos por su ID
+      List<Materiales> materiales =
+          await DatabaseProvider.obtenerMaterialPorId(idProbl);
+      if (materiales.isNotEmpty) {
+        // Itera sobre cada defecto en la lista
+        for (Materiales material in materiales) {
+          // Accede a los datos del defecto
+          String nombreMaterial = material.nombre;
 
-        // Usa los datos como necesites
+          _textEditingControllerMaterial.text = nombreMaterial;
+
+          // Usa los datos como necesites
+          print('Nombre: $nombreMaterial');
+        }
       } else {
-        // Manejo si no se encontró el defecto
+        // Manejo si no se encontraron defectos
         if (kDebugMode) {
           print("NO HAY DATOS");
         }
@@ -237,17 +267,21 @@ class _EditMyFormState extends State<EditMyForm> {
 
   Future<void> editarManoObra() async {
     try {
-      // Llama al método para obtener el defecto por su ID
-      Map<String, dynamic> obra =
-          await DatabaseHelper().obtenerObraPorId(idObra);
-      // Verifica si se encontró el defecto
-      if (obra.isNotEmpty) {
-        // Accede a los datos del defecto
-        _textEditingControllerObra.text = obra['nom_obr'];
+      // Llama al método para obtener los defectos por su ID
+      List<Obra> obras = await DatabaseProvider.obtenerObraPorId(idProbl);
+      if (obras.isNotEmpty) {
+        // Itera sobre cada defecto en la lista
+        for (Obra obra in obras) {
+          // Accede a los datos del defecto
+          String nombreObra = obra.nombre;
 
-        // Usa los datos como necesites
+          _textEditingControllerObra.text = nombreObra;
+
+          // Usa los datos como necesites
+          print('Nombre: $nombreObra');
+        }
       } else {
-        // Manejo si no se encontró el defecto
+        // Manejo si no se encontraron defectos
         if (kDebugMode) {
           print("NO HAY DATOS");
         }
@@ -259,6 +293,19 @@ class _EditMyFormState extends State<EditMyForm> {
       }
     }
   }
+
+  /* void _removeImage(int index) {
+    setState(() {
+      // Elimina la imagen de la lista de imágenes
+      images.removeAt(index);
+
+      // Elimina la ruta de la imagen de la lista de rutas de imágenes
+      String imagePathToRemove = fotos[index];
+      File(imagePathToRemove).deleteSync();
+      fotos.removeAt(index);
+      print("IMAGENES DE LA LISTA $fotos");
+    });
+  } */
 
   Future<void> _cargarDatosAsync() async {
     try {
@@ -346,7 +393,7 @@ class _EditMyFormState extends State<EditMyForm> {
       String otroO = _otroObraController.text;
       int cantM = widget.data['cant_mat'];
       int cantO = widget.data['cant_obr'];
-      idReporte = widget.data['id_rep'];
+      //idReporte = widget.data['id_rep'];
 
       try {
         if (valorCanMate.isNotEmpty) {
@@ -355,7 +402,7 @@ class _EditMyFormState extends State<EditMyForm> {
         if (valorCanObra.isNotEmpty) {
           cantO = int.parse(valorCanObra);
         }
-        DatabaseHelper.editarReporte(
+        /* DatabaseHelper.editarReporte(
           idReporte,
           selectedFormato,
           valorDepartamento,
@@ -371,7 +418,7 @@ class _EditMyFormState extends State<EditMyForm> {
           otroO,
           cantO,
           idTiend,
-        );
+        ); */
 
         // Muestra una alerta de "Edición terminada"
         showDialog(
@@ -447,9 +494,9 @@ class _EditMyFormState extends State<EditMyForm> {
 
   Widget _buildForm(BuildContext context) {
     idTiend = idTienda;
-    List<Map<String, dynamic>> resultadosP = [];
-    List<Map<String, dynamic>> resultadosM = [];
-    List<Map<String, dynamic>> resultadosO = [];
+    List<Problemas> resultadosP = [];
+    List<Materiales> resultadosM = [];
+    List<Obra> resultadosO = [];
 
     if (_currentStatus == ConnectionStatus.online) {
       return Scaffold(
@@ -511,25 +558,28 @@ class _EditMyFormState extends State<EditMyForm> {
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                     controller: _textEditingControllerProblema,
                     onChanged: (String value) async {
-                      resultadosP =
-                          await DatabaseHelper.mostrarProblemas(value);
+                      resultadosP = await DatabaseProvider.showProblemas();
+                      idProbl = 0;
                       setState(() {
                         showListProblemas = value.isNotEmpty;
                         // Utiliza la variable resultados directamente
                         filteredOptionsProblema = resultadosP
                             .where((opcion) =>
-                                opcion['cod_probl']
+                                opcion.codigo
                                     .toLowerCase()
                                     .contains(value.toLowerCase()) ||
-                                opcion['nom_probl']
+                                opcion.nombre
                                     .toLowerCase()
                                     .contains(value.toLowerCase()))
                             .map((opcion) {
                           // Guarda el ID en la variable externa
-                          idProbl = opcion['id_probl'];
-                          // Retorna el texto para mostrar en la lista
-                          String textoProblema =
-                              '${opcion['nom_probl']} ${opcion['formato']}';
+                          // Establecer como null por defecto
+                          if (showListProblemas) {
+                            idProbl = opcion.id!;
+                          }
+
+                          String textoProblema = opcion.nombre;
+                          print("problema $textoProblema");
                           return '$textoProblema|id:$idProbl';
                         }).toList();
                       });
@@ -545,6 +595,7 @@ class _EditMyFormState extends State<EditMyForm> {
                                   isProblemSelected = false;
                                   showListProblemas =
                                       true; // Muestra la lista nuevamente al eliminar la opción
+                                  print("VISIBILIDAD ONE $showListProblemas");
                                 });
                               },
                             )
@@ -568,17 +619,20 @@ class _EditMyFormState extends State<EditMyForm> {
                         height: 200,
                         child: ListView.builder(
                           itemCount: filteredOptionsProblema.length,
-                          itemBuilder: (context, index) {
+                          itemBuilder: (context, i) {
+                            print("VISIBILIDAD $showListProblemas");
                             // Divide el texto del problema y el ID del problema
                             List<String> partes =
-                                filteredOptionsProblema[index].split('|id:');
+                                filteredOptionsProblema[i].split('|');
+                            print("PARTES DE LA SELECCIÓN $partes");
                             String textoProblema = partes[0];
-                            int idProblema = int.parse(partes[1]);
+                            int idProblema = int.parse(
+                                partes[1].substring(3)); // Para eliminar 'id:'
                             return ListTile(
                               title: Text(textoProblema),
                               onTap: () {
-                                // Puedes acceder al ID del problema seleccionado aquí
                                 int idProblemaSeleccionado = idProblema;
+                                print("ID PROBLEMA $idProblemaSeleccionado");
                                 handleSelectionProblem(
                                     textoProblema, idProblemaSeleccionado);
                                 showListProblemas = false;
@@ -595,21 +649,22 @@ class _EditMyFormState extends State<EditMyForm> {
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                     controller: _textEditingControllerMaterial,
                     onChanged: (String value) async {
-                      resultadosM =
-                          await DatabaseHelper.mostrarMateriales(value);
+                      resultadosM = await DatabaseProvider.showMateriales();
+                      idMat = 0;
                       setState(() {
                         showListMaterial = value.isNotEmpty;
                         // Utiliza la variable resultados directamente
                         filteredOptionsMaterial = resultadosM
-                            .where((opcion) => opcion['nom_mat']
+                            .where((opcion) => opcion.nombre
                                 .toLowerCase()
                                 .contains(value.toLowerCase()))
                             .map((opcion) {
                           // Guarda el ID en la variable externa
-                          idMat = opcion['id_mat'];
+                          if (showListMaterial) {
+                            idMat = opcion.id!;
+                          }
                           // Retorna el texto para mostrar en la lista
-                          String textoMaterial =
-                              '${opcion['nom_mat']} ${opcion['formato']}';
+                          String textoMaterial = opcion.nombre;
                           return '$textoMaterial|id:$idMat';
                         }).toList();
                       });
@@ -653,6 +708,7 @@ class _EditMyFormState extends State<EditMyForm> {
                                 filteredOptionsMaterial[index].split('|id:');
                             String textoMaterial = partes[0];
                             int idMaterial = int.parse(partes[1]);
+                            print("MATERIALESS $partes");
                             return ListTile(
                               title: Text(textoMaterial),
                               onTap: () {
@@ -712,44 +768,67 @@ class _EditMyFormState extends State<EditMyForm> {
                     child: SizedBox(
                       child: ListView(
                         scrollDirection: Axis.horizontal,
-                        children: fotos.map<Widget>((url) {
+                        children: fotos.split(",").map<Widget>((url) {
                           return Padding(
                             padding: const EdgeInsets.all(4),
-                            child: InkWell(
-                              onTap: () {
-                                // Muestra la imagen en una vista modal o un diálogo
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    content: Image.network(
-                                      url,
-                                      errorBuilder:
-                                          (context, error, stackTrace) {
-                                        // Manejar el error y mostrar una imagen de respaldo
-                                        return Image.asset(
-                                            'assets/no_image.png');
-                                      },
-                                      fit: BoxFit
-                                          .contain, // Ajusta la imagen al tamaño del contenedor
-                                    ),
+                            child: Stack(
+                              children: [
+                                // Imagen
+                                InkWell(
+                                  onTap: () {
+                                    // Muestra la imagen en una vista modal o un diálogo
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        content: Image.file(
+                                          File(url.trim()),
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                            // Manejar el error y mostrar una imagen de respaldo
+                                            return Image.asset(
+                                              'assets/no_image.png',
+                                              width: 70,
+                                              height: 70,
+                                            );
+                                          },
+                                          width: 500,
+                                          height: 500,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Image.file(
+                                    File(url.trim()),
+                                    errorBuilder: (context, error, stackTrace) {
+                                      // Manejar el error y mostrar una imagen de respaldo
+                                      return Image.asset(
+                                        'assets/no_image.png',
+                                        width: 70,
+                                        height: 70,
+                                      );
+                                    },
+                                    width: 70,
+                                    height: 70,
+                                    fit: BoxFit.cover,
                                   ),
-                                );
-                              },
-                              child: Image.network(
-                                url,
-                                errorBuilder: (context, error, stackTrace) {
-                                  CachedNetworkImage(
-                                    imageUrl: url,
-                                    placeholder: (context, url) =>
-                                        const CircularProgressIndicator(),
-                                    errorWidget: (context, url, error) =>
-                                        const Icon(Icons.error),
-                                  );
-                                  // Manejar el error y mostrar una imagen de respaldo
-                                  return Image.asset('assets/no_image.png',
-                                      width: 70, height: 70);
-                                },
-                              ),
+                                ),
+                                // Botón de eliminar
+                                /*  Positioned(
+                                  top: 0,
+                                  right: 0,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      /* setState(() {
+                  images.removeAt(index); // Remueve la imagen de la lista
+                }); */
+                                      _removeImage(index);
+                                    },
+                                    child: const Icon(Icons
+                                        .cancel_rounded), // Ícono para cancelar
+                                  ),
+                                ), */
+                              ],
                             ),
                           );
                         }).toList(),
@@ -761,22 +840,25 @@ class _EditMyFormState extends State<EditMyForm> {
                   ),
                   const SizedBox(height: 25),
                   TextFormField(
+                    //enabled: activarCampos,
                     autovalidateMode: AutovalidateMode.onUserInteraction,
                     controller: _textEditingControllerObra,
                     onChanged: (String value) async {
-                      resultadosO = await DatabaseHelper.mostrarObra(value);
+                      resultadosO = await DatabaseProvider.showObra();
+                      idObra = 0;
                       setState(() {
                         showListObra = value.isNotEmpty;
                         filteredOptionsObra = resultadosO
-                            .where((opcion) => opcion['nom_obr']
+                            .where((opcion) => opcion.nombre
                                 .toLowerCase()
                                 .contains(value.toLowerCase()))
                             .map((opcion) {
                           // Guarda el ID en la variable externa
-                          idObra = opcion['id_obr'];
+                          if (showListObra) {
+                            idObra = opcion.id!;
+                          }
                           // Retorna el texto para mostrar en la lista
-                          String textoObra =
-                              '${opcion['nom_obr']} ${opcion['formato']}';
+                          String textoObra = opcion.nombre;
                           return '$textoObra|id:$idObra';
                         }).toList();
                       });
