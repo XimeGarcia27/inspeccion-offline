@@ -1,3 +1,4 @@
+//modelo de los campos del reporte
 class Reporte {
   int? idReporte;
   String? formato;

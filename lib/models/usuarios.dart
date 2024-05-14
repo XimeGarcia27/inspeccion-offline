@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 // ignore: depend_on_referenced_packages
 import 'package:path/path.dart';
 
+//modelo de usuarios
 class Usuarios {
   int? id;
   String nombre;
@@ -25,6 +26,7 @@ class Usuarios {
   }
 }
 
+//método para insertar los usuarios en la bd local
 void insertInitialDataUser() async {
   getDatabasesPath().then((databasePath) async {
     join(databasePath, 'conexsa.db');
@@ -77,8 +79,11 @@ void insertInitialDataUser() async {
           contrasena: 'InsConex9'),
     ];
 
+    //obtener la lista de los usuarios para verificar si existen datos en la table
     final List<Usuarios> existingUsers = await DatabaseProvider.showUsers();
+    //verificar si la tabla de usuarios tiene datos
     if (existingUsers.isEmpty) {
+      //si tiene datos se insertan en la tabla usuarios
       for (final usuario in usuarios) {
         DatabaseProvider.insertUsuarios(usuario);
       }

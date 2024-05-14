@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 // ignore: depend_on_referenced_packages
 import 'package:path/path.dart';
 
+//modelo de las opciones de mano de obra, que se utilizan en el formulario
 class Obra {
   int? id;
   String nombre;
@@ -20,6 +21,7 @@ class Obra {
   }
 }
 
+//inserción de las opciones de mano de obra, llenar la tabla obra de mi bd local
 void insertInitialDataO() async {
   getDatabasesPath().then((databasePath) async {
     join(databasePath, 'conexsa.db');
@@ -72,10 +74,10 @@ void insertInitialDataO() async {
       Obra(id: null, nombre: 'Tabblones de madera a la interperie'),
     ];
 
-    // Verificar si ya existen datos en la base de datos
+    // Verificar si ya existen datos en la tabla obra
     final List<Obra> existingObra = await DatabaseProvider.showObra();
+    // Insertar solo si la tabla obra está vacía
     if (existingObra.isEmpty) {
-      // Insertar solo si la base de datos está vacía
       for (final obr in obra) {
         DatabaseProvider.insertManoObra(obr);
       }

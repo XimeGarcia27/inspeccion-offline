@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 // ignore: depend_on_referenced_packages
 import 'package:path/path.dart';
 
+//modelo de las tiendas
 class Tiendas {
   int? id;
   int codigo;
@@ -25,6 +26,7 @@ class Tiendas {
   }
 }
 
+//método para insertar las tiendas en la bd local en tabla tiendas
 void insertInitialDataT() async {
   getDatabasesPath().then((databasePath) async {
     join(databasePath, 'conexsa.db');
@@ -382,10 +384,10 @@ void insertInitialDataT() async {
           distrito: 'PACIFICO SUR'),
     ];
 
-    // Verificar si ya existen datos en la base de datos
+    // Verificar si ya existen datos en la tabla tiendas de la bd local
     final List<Tiendas> existingTienda = await DatabaseProvider.showTiendas();
+    // Insertar solo si la tabla tiendas está vacía
     if (existingTienda.isEmpty) {
-      // Insertar solo si la base de datos está vacía
       for (final tienda in tiendas) {
         DatabaseProvider.insertTiendas(tienda);
       }

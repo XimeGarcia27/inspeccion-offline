@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 // ignore: depend_on_referenced_packages
 import 'package:path/path.dart';
 
+//modelo de las opciones de problemas para el formulario
 class Problemas {
   int? id;
   String nombre;
@@ -25,6 +26,7 @@ class Problemas {
   }
 }
 
+//método para insertar las opciones de problemas en mi tabla de problemas en mi bd local
 void insertInitialDataP() async {
   getDatabasesPath().then((databasePath) async {
     final dbFilePath = join(databasePath, 'conexsa.db');
@@ -449,11 +451,11 @@ void insertInitialDataP() async {
       Problemas(id: null, nombre: '', codigo: '', formato: ''),
     ];
 
-// Verificar si ya existen datos en la base de datos
+    // Verificar si ya existen datos en la tabla problemas
     final List<Problemas> existingProblemas =
         await DatabaseProvider.showProblemas();
+    // Insertar solo si la tabla problemas está vacía
     if (existingProblemas.isEmpty) {
-      // Insertar solo si la base de datos está vacía
       for (final problema in problemas) {
         DatabaseProvider.insertProblem(problema);
       }

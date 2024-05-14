@@ -1,3 +1,4 @@
+//modelo de las imagenes que se subiran a firebase
 class Images {
   int id;
   String datoUnicRepor;

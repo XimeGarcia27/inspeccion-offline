@@ -402,7 +402,7 @@ class _EditMyFormState extends State<EditMyForm> {
         if (valorCanObra.isNotEmpty) {
           cantO = int.parse(valorCanObra);
         }
-        /* DatabaseHelper.editarReporte(
+        /*DatabaseHelper.editarReporte(
           idReporte,
           selectedFormato,
           valorDepartamento,
@@ -418,7 +418,7 @@ class _EditMyFormState extends State<EditMyForm> {
           otroO,
           cantO,
           idTiend,
-        ); */
+        );*/
 
         // Muestra una alerta de "Edición terminada"
         showDialog(

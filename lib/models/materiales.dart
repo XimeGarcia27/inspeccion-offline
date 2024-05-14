@@ -3,6 +3,7 @@ import 'package:sqflite/sqflite.dart';
 // ignore: depend_on_referenced_packages
 import 'package:path/path.dart';
 
+//modelo de las opciones de materiales para el formulario
 class Materiales {
   int? id;
   String nombre;
@@ -20,6 +21,7 @@ class Materiales {
   }
 }
 
+//método para insertar las opciones de materiales en la bd local en la tabla materiales
 void insertInitialDataM() async {
   getDatabasesPath().then((databasePath) async {
     join(databasePath, 'conexsa.db');
@@ -133,11 +135,11 @@ void insertInitialDataM() async {
       Materiales(id: null, nombre: ''),
     ];
 
-    // Verificar si ya existen datos en la base de datos
+    // Verificar si ya existen datos en la tabla materiales
     final List<Materiales> existingMateriales =
         await DatabaseProvider.showMateriales();
+    // Insertar solo si la tabla materiales está vacía
     if (existingMateriales.isEmpty) {
-      // Insertar solo si la base de datos está vacía
       for (final material in materiales) {
         DatabaseProvider.insertMaterial(material);
       }
