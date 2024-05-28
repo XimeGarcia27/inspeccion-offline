@@ -20,32 +20,12 @@ class AuthService extends ChangeNotifier {
     notifyListeners(); // Notificar a los listeners que el estado ha cambiado
   }
 
-/*   Future<String?> createUser(
-      String name, String email, String contrasena) async {
-    try {
-      final connection = await openConnection();
-      await connection.query(
-          'INSERT INTO usuarios (nombre, email, password) VALUES (@name, @email, @contrasena)',
-          substitutionValues: {
-            'name': name,
-            'email': email,
-            'contrasena': contrasena
-          });
-      return null;
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error al registrar usuario: $e');
-      }
-      return e.toString();
-    }
-  } */
-
   Future<String?> login(String nomUsu, String contrasena) async {
     try {
       Database database = await DatabaseProvider.openDB();
       final List<Map<String, dynamic>> results = await database.rawQuery(
-        'SELECT nombre FROM usuarios WHERE nom_usu LIKE ? AND password LIKE ?',
-        ['%$nomUsu%', '%$contrasena%'],
+        'SELECT nombre FROM usuarios WHERE nom_usu = ? AND password = ?',
+        [nomUsu, contrasena],
       );
       if (results.isNotEmpty) {
         final nombreCompleto = results[0]['nombre'] as String;

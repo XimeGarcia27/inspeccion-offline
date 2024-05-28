@@ -1,14 +1,11 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:app_inspections/main.dart';
+import 'dart:convert';
 import 'package:app_inspections/models/mano_obra.dart';
 import 'package:app_inspections/models/materiales.dart';
 import 'package:app_inspections/models/problemas.dart';
 import 'package:app_inspections/models/reporte_model.dart';
 import 'package:app_inspections/services/db_offline.dart';
-import 'package:app_inspections/services/db_online.dart';
-import 'package:app_inspections/services/photo_services.dart';
-import 'package:app_inspections/src/pages/utils/check_internet_connection.dart';
 import 'package:app_inspections/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -21,6 +18,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // ignore: depend_on_referenced_packages
 import 'package:uuid/uuid.dart';
+import 'package:gallery_saver_plus/gallery_saver.dart';
 
 class F1Screen extends StatelessWidget {
   final int idTienda;
@@ -58,11 +56,6 @@ class MyForm extends StatefulWidget {
 }
 
 class _MyFormState extends State<MyForm> {
-  //verificar la conexion a internet
-  late final CheckInternetConnection _internetConnection;
-  late StreamSubscription<ConnectionStatus> _connectionSubscription;
-  ConnectionStatus _currentStatus = ConnectionStatus.online;
-
   List<Materiales> materiales = [];
   List<Problemas> problemas = [];
   List<Obra> obra = [];
@@ -70,7 +63,6 @@ class _MyFormState extends State<MyForm> {
   final int idTienda;
   @override
   final BuildContext context;
-  //bool _isButtonDisabled = true;
   List<Map<String, dynamic>> datosIngresados = [];
   List<XFile> images = [];
   int maxPhotos = 6;
@@ -98,12 +90,9 @@ class _MyFormState extends State<MyForm> {
   int idProbl = 0;
   int idMat = 0;
   int idObra = 0;
-  //String selectedFormato = "F1";
   bool isGuardarHabilitado = false;
   String? nomUser = "";
-
   String formato = "";
-
   List<String> problemasEscritos = [];
   List<String> materialesEscritos = [];
   List<String> obrasEscritas = [];
@@ -117,21 +106,16 @@ class _MyFormState extends State<MyForm> {
   final FocusNode _cantidadFocus = FocusNode();
   final FocusNode _focusOtO = FocusNode();
 
+  bool _areRemainingFieldsEnabled = false;
+
   @override
   void initState() {
     super.initState();
-    _internetConnection = CheckInternetConnection();
-    _connectionSubscription =
-        _internetConnection.internetStatus().listen((status) {
-      setState(() {
-        _currentStatus = status;
-      });
-    });
+
     cargaProblemas();
     _focusNodeProbl.addListener(() {
       if (!_focusNodeProbl.hasFocus) {
         setState(() {
-          // Oculta la lista cuando el campo pierde el foco
           showListProblemas = false;
         });
       }
@@ -139,7 +123,6 @@ class _MyFormState extends State<MyForm> {
     _focusNodeMat.addListener(() {
       if (!_focusNodeMat.hasFocus) {
         setState(() {
-          // Oculta la lista cuando el campo pierde el foco
           showListMaterial = false;
         });
       }
@@ -147,24 +130,45 @@ class _MyFormState extends State<MyForm> {
     _focusNodeObr.addListener(() {
       if (!_focusNodeObr.hasFocus) {
         setState(() {
-          // Oculta la lista cuando el campo pierde el foco
           showListObra = false;
         });
       }
     });
+    _departamentoController.addListener(_validateFields);
+    _ubicacionController.addListener(_validateFields);
+    _textEditingControllerProblema.addListener(_validateFields);
   }
 
   @override
   void dispose() {
-    _connectionSubscription.cancel();
-    _internetConnection.close();
+    _departamentoController.dispose();
+    _ubicacionController.dispose();
+    _idproblController.dispose();
+    _idmatController.dispose();
+    _cantmatController.dispose();
+    _idobraController.dispose();
+    _cantobraController.dispose();
+    _otroMPController.dispose();
+    _otroObraController.dispose();
+    _textEditingControllerProblema.dispose();
+    _textEditingControllerMaterial.dispose();
+    _textEditingControllerObra.dispose();
     super.dispose();
+  }
+
+  void _validateFields() {
+    setState(() {
+      _areRemainingFieldsEnabled = _departamentoController.text.isNotEmpty &&
+          _ubicacionController.text.isNotEmpty &&
+          _textEditingControllerProblema.text.isNotEmpty;
+    });
   }
 
   final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   final ImagePicker _picker = ImagePicker();
   List<String> imagePaths =
       []; // Lista para almacenar las rutas de las imágenes
+  //deshabilitar botones
 
   final TextEditingController _textEditingControllerProblema =
       TextEditingController();
@@ -188,6 +192,32 @@ class _MyFormState extends State<MyForm> {
   bool isObraSelected = false;
   List<String?> imageUrls = []; //se almacenan todas las imagenes
 
+  void _showPermissionDeniedDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Permiso de cámara denegado'),
+        content: const Text(
+            'Esta aplicación necesita acceso a la cámara para funcionar correctamente. Por favor, habilita el permiso desde la configuración.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              openAppSettings();
+            },
+            child: const Text('Abrir configuración'),
+          ),
+        ],
+      ),
+    );
+  }
+
   // Función para abrir la cámara y seleccionar imágenes
   Future<void> _getImage() async {
     if (images.length >= maxPhotos) {
@@ -201,7 +231,7 @@ class _MyFormState extends State<MyForm> {
             actions: [
               TextButton(
                 onPressed: () {
-                  Navigator.of(context).pop(); // Cerrar ventana emergente
+                  Navigator.of(context).pop();
                 },
                 child: const Text('OK'),
               ),
@@ -209,14 +239,13 @@ class _MyFormState extends State<MyForm> {
           );
         },
       );
-      return; // Salir del método si se alcanza el límite de fotos
+      return;
     }
 
     var cameraPermissionStatus = await Permission.camera.request();
     if (cameraPermissionStatus != PermissionStatus.granted) {
-      // El usuario denegó el permiso de la cámara, mostrar un mensaje o realizar una acción apropiada
-      return;
-    }
+      _showPermissionDeniedDialog();
+    } else {}
 
     final XFile? image = await _picker.pickImage(source: ImageSource.camera);
     if (image != null) {
@@ -224,23 +253,37 @@ class _MyFormState extends State<MyForm> {
         images.add(image);
       });
 
-      try {
-        String? imageUrl =
-            await FirebaseStorageService.uploadImage(File(image.path));
-        if (imageUrl != null) {
-          storeImageUrl(imageUrl); // Guardar URL de imagen
-          print('La imagen se ha subido a la base de datos de Postgre.');
-        }
+      String generateUniqueFilename(
+          String dep, String ubi, String nomP, int idTiend) {
+        String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+        return 'Dep_${dep}_Ubi_${ubi}_Def_${nomP}_T_${idTiend}_$timestamp.jpg';
+      }
 
+      try {
         final Directory directory = await getApplicationDocumentsDirectory();
-        String imagePath =
-            '${directory.path}/foto_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        String dep = _departamentoController.text;
+        String ubi = _ubicacionController.text;
+        String nomP = _textEditingControllerProblema.text;
+
+        String fileName = generateUniqueFilename(dep, ubi, nomP, idTiend);
+        String imagePath = '${directory.path}/$fileName';
         final File imageFile = File(imagePath);
         await imageFile.writeAsBytes(await image.readAsBytes());
 
         // Agregar la ruta de la imagen a la lista
         setState(() {
           imagePaths.add(imagePath);
+        });
+        print("URL DE IMAGEN $imagePath");
+
+        // Guardar la imagen en la galería
+        GallerySaver.saveImage(imagePath, albumName: 'inspecciones')
+            .then((bool? success) {
+          if (success != null && success) {
+            print('La imagen se guardó correctamente en la galería.');
+          } else {
+            print('Error al guardar la imagen en la galería.');
+          }
         });
       } catch (e) {
         print("No se pudo insertar el reporte online $e");
@@ -311,21 +354,9 @@ class _MyFormState extends State<MyForm> {
   void guardarDatosConConfirmacion(BuildContext context) async {
     bool confirmacion = await mostrarDialogoConfirmacion(context);
     if (confirmacion == true) {
-      // Ejecutar la función _guardarDatos si el usuario acepta
       _guardarDatos();
-    } else {
-      // No hacer nada si el usuario  cancela
-    }
+    } else {}
   }
-
-  /*  void _guardarImagenEnBD(File imageURL) {
-    setState(() {
-      // Asigna la URL de la imagen a una variable de estado para su uso en el formulario
-      _urlImagenSeleccionada = imageURL;
-    });
-    print("URL D ELA IMAGEEEN $_urlImagenSeleccionada");
-  } */
-  //
 
   void _guardarDatos() {
     if (formKey.currentState!.validate()) {
@@ -342,12 +373,9 @@ class _MyFormState extends State<MyForm> {
         int cantM = 0;
         int cantO = 0;
         String datoUnico = "";
-        //List<String?> fotos = [];
         String datoCompartido = generateUniqueId();
 
         for (final datos in datosIngresados) {
-          // Usar un valor predeterminado si el valor es nulo
-
           formato = datos['Formato'] ?? '';
           valorDepartamento = datos['Departamento'] ?? '';
           valorUbicacion = datos['Ubicacion'] ?? '';
@@ -363,9 +391,9 @@ class _MyFormState extends State<MyForm> {
           cantidadO = datos['Cantidad_Obra'] ?? ' ';
           cantidadO = datos['Cantidad_Obra'] ?? ' ';
           datoUnico = datos['Dato_Unico'] ?? ' ';
-          //fotos = datos['Foto'] ?? 0;
-          String fotosString = imagePaths.join(
-              ','); // Concatenar las URLs de las fotos en una sola cadena separada por comas
+          String? fotosString = imagePaths.toString();
+          print("FOTOS EN LA BD $fotosString");
+          fotosString = jsonEncode(imagePaths);
 
           if (cantidadM.isNotEmpty) {
             cantM = int.tryParse(cantidadM) ?? 0;
@@ -389,67 +417,37 @@ class _MyFormState extends State<MyForm> {
             nomObr: nomObra,
             otroObr: otroO,
             cantObr: cantO,
-            foto: fotosString, // Debes manejar la lógica para las fotos aquí
+            foto: fotosString,
             datoU: datoUnico,
             datoC: datoCompartido,
-            nombUser: nomUser!, // Aquí debes establecer el nombre del usuario
+            nombUser: nomUser!,
             lastUpdated: DateTime.now().toIso8601String(),
-            idTienda: idTiend, // Aquí debes establecer el ID de la tienda
+            idTienda: idTiend,
           );
-          print("NUEVO REPORTE $nuevoReporte");
-
-          print("DATOS DEL ARREGLO");
-          print("FORMATO $formato");
-          print("DEPARTAMENTO $valorDepartamento");
-          print("UBICACION $valorUbicacion");
-          print("ID PROBLEMA $idProbl");
-          print("NOMBRE PROBLEMA $nomProbl");
-          print("ID MATERIAL $idMat");
-          print("NOMBRE MATERIAL $nomMat");
-          print("OTRO MATERIAL $otro");
-          print("CANTIDAD MATERIAL $cantM");
-          print("ID OBRA $idObra");
-          print("NOMBRE OBRA $nomObra");
-          print("OTRO MANO DE OBRA $otroO");
-          print("CANTIDAD MANO OBRA $cantO");
-          print("DATO UNICO PARA REFERENCIAR $datoUnico");
-          print("DATO COMPARTIDO $datoCompartido");
-          print("FOTO $fotosString");
-          print("USUARIO $nomUser");
-          print("ID TIENDA $idTiend");
-
           DatabaseProvider.insertReporte(nuevoReporte);
-
-          /* DatabaseHelper.insertarReporte(
-            formato, 
-            valorDepartamento,
-            valorUbicacion, 
-            idProbl,
-            nomProbl,
-            idMat,
-            nomMat,
-            otro,
-            cantM,
-            idObra,
-            nomObra,
-            otroO, 
-            cantO,
-            fotos,
-            datoUnico,
-            nomUser!,
-            idTiend,
-          ); */
-
-          //DatabaseProvider.insertReporte(datos);
-          DatabaseHelper.insertarImagenes(fotosString, datoUnico, idTiend);
         }
         _save();
         datosIngresados.clear();
         images.clear();
       } catch (e) {
-        // Manejo de errores
-        print('Error al insertar el reporte: $e');
-        // Puedes mostrar un mensaje de error al usuario si lo deseas
+        print(" error al insertar $e");
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Error al Insertar'),
+              content: const Text('¡Intenta nuevamente!'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Cierra la alerta
+                  },
+                  child: const Text('Aceptar'),
+                ),
+              ],
+            );
+          },
+        );
       }
     }
   }
@@ -466,7 +464,6 @@ class _MyFormState extends State<MyForm> {
       isGuardarHabilitado = true;
     });
     if (formKey.currentState!.validate()) {
-      // Obtener los datos ingresados por el usuario
       String valorDepartamento = _departamentoController.text;
       String valorUbicacion = _ubicacionController.text;
       String valorCanMate = _cantmatController.text;
@@ -476,28 +473,8 @@ class _MyFormState extends State<MyForm> {
       String nomObra = _textEditingControllerObra.text;
       String otro = _otroMPController.text;
       String otroO = _otroObraController.text;
-
       String datoUnico = generateUniqueId();
-      //List<String?> fotos = [];
-      //fotos = imageUrls;
-      // Agregar los datos a la lista
-      datosIngresados.add({
-        'Formato': formato,
-        'Departamento': valorDepartamento,
-        'Ubicacion': valorUbicacion,
-        'ID_Problema': idProbl,
-        'Problema': nomProbl,
-        'ID_Material': idMat,
-        'Material': nomMat,
-        'Otro': otro,
-        'Cantidad_Material': valorCanMate,
-        'ID_Obra': idObra,
-        'Obra': nomObra,
-        'Otro_Obr': otroO,
-        'Dato_Unico': datoUnico,
-        'Cantidad_Obra': valorCanObra,
-        //'Foto': fotos,
-      });
+
       // Crear una lista para almacenar los nombres de los campos vacíos
       List<String> camposVacios = [];
 
@@ -527,10 +504,49 @@ class _MyFormState extends State<MyForm> {
             );
           },
         );
-        return; // Salir del método sin guardar los datos
+        return;
       }
-      _save();
+      datosIngresados.add({
+        'Formato': formato,
+        'Departamento': valorDepartamento,
+        'Ubicacion': valorUbicacion,
+        'ID_Problema': idProbl,
+        'Problema': nomProbl,
+        'ID_Material': idMat,
+        'Material': nomMat,
+        'Otro': otro,
+        'Cantidad_Material': valorCanMate,
+        'ID_Obra': idObra,
+        'Obra': nomObra,
+        'Otro_Obr': otroO,
+        'Dato_Unico': datoUnico,
+        'Cantidad_Obra': valorCanObra,
+      });
+      _saveT();
     }
+  }
+
+  void _saveT() {
+    setState(() {
+      _textEditingControllerMaterial.clear();
+      isMaterialSelected = false;
+      showListMaterial = false;
+      _textEditingControllerProblema.clear();
+      isProblemSelected = false;
+      showListProblemas = false;
+      _textEditingControllerObra.clear();
+      isObraSelected = false;
+      showListObra = false;
+      _cantidadFocus.unfocus();
+      //_departamentoController.clear();
+      //_ubicacionController.clear();
+      _cantmatController.clear();
+      _cantobraController.clear();
+      _otroMPController.clear();
+      _otroObraController.clear();
+      formato = "";
+      _focusNodeObr.unfocus();
+    });
   }
 
   void _save() {
@@ -564,17 +580,7 @@ class _MyFormState extends State<MyForm> {
     List<Obra> resultadosO = [];
     final authService = Provider.of<AuthService>(context, listen: false);
     nomUser = authService.currentUser;
-    //print("usuariooo $nomUser");
 
-    //comparar si se activa la seccion de mano de obra
-    //String problema = _textEditingControllerProblema.text.toLowerCase();
-    //bool contieneTornillo = problema.contains('tornillo');
-    //generar lista de problemas que no llevan foto para activar los demas campos
-    //en la bd el campo foto no debe ser requerido, puede ir nulo, configurarlo
-    //bool masDeUnaFoto = images.length > 1;
-
-    //bool activarCampos = contieneTornillo || masDeUnaFoto;
-    // if (_currentStatus == ConnectionStatus.offline) {
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 30),
@@ -585,24 +591,6 @@ class _MyFormState extends State<MyForm> {
               children: [
                 Text('Registro de Inspección',
                     style: Theme.of(context).textTheme.headlineMedium),
-                /* DropdownButtonFormField(
-                  value: selectedFormato,
-                  onChanged: (newValue) {
-                    setState(() {
-                      selectedFormato = newValue!;
-                    });
-                  },
-                  items: <String>['F1', 'F2']
-                      .map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
-                  decoration: const InputDecoration(
-                      labelText:
-                          'Selecciona el formato de tu defecto (F1 o F2)'),
-                ), */
                 TextFormField(
                   controller: _departamentoController,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -621,7 +609,6 @@ class _MyFormState extends State<MyForm> {
                   decoration:
                       const InputDecoration(labelText: 'Ubicación (Bahia)'),
                   validator: (value) {
-                    // Validar si el campo está vacío solo si el usuario ha interactuado con él
                     if (_ubicacionController.text.isEmpty &&
                         _ubicacionController.text.isNotEmpty) {
                       return 'Este campo es obligatorio';
@@ -638,7 +625,6 @@ class _MyFormState extends State<MyForm> {
                     idProbl = 0;
                     setState(() {
                       showListProblemas = value.isNotEmpty;
-                      // Utiliza la variable resultados directamente
                       filteredOptionsProblema = resultadosP
                           .where((opcion) =>
                               opcion.codigo
@@ -648,16 +634,11 @@ class _MyFormState extends State<MyForm> {
                                   .toLowerCase()
                                   .contains(value.toLowerCase()))
                           .map((opcion) {
-                        // Guarda el ID en la variable externa
-                        // Establecer como null por defecto
                         if (showListProblemas) {
                           idProbl = opcion.id!;
                           formato = opcion.formato;
-                          print("formato de la seleccion $formato");
                         }
-
                         String textoProblema = opcion.nombre;
-                        print("problema $textoProblema");
                         return '$textoProblema|id:$idProbl|formato:$formato';
                       }).toList();
                     });
@@ -671,9 +652,7 @@ class _MyFormState extends State<MyForm> {
                               setState(() {
                                 _textEditingControllerProblema.clear();
                                 isProblemSelected = false;
-                                showListProblemas =
-                                    true; // Muestra la lista nuevamente al eliminar la opción
-                                print("VISIBILIDAD ONE $showListProblemas");
+                                showListProblemas = true;
                               });
                             },
                           )
@@ -681,7 +660,6 @@ class _MyFormState extends State<MyForm> {
                   ),
                   readOnly: isProblemSelected,
                   validator: (value) {
-                    // Validar si el campo está vacío solo si el usuario ha interactuado con él
                     if (_textEditingControllerProblema.text.isEmpty &&
                         _textEditingControllerProblema.text.isNotEmpty) {
                       return 'Este campo es obligatorio';
@@ -722,26 +700,8 @@ class _MyFormState extends State<MyForm> {
                       ),
                     ),
                   ),
-                /* Row(
-                  children: [
-                    Flexible(
-                      flex: 1,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return const AgregarProblema(); // Aquí creas una instancia de tu pantalla AgregarProblema
-                            },
-                          );
-                        },
-                        icon: const Icon(Icons.add),
-                        label: const Text('Agregar nuevo defecto'),
-                      ),
-                    ),
-                  ],
-                ), */
                 TextFormField(
+                  enabled: _areRemainingFieldsEnabled,
                   focusNode: _focusNodeMat,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: _textEditingControllerMaterial,
@@ -750,17 +710,14 @@ class _MyFormState extends State<MyForm> {
                     idMat = 0;
                     setState(() {
                       showListMaterial = value.isNotEmpty;
-                      // Utiliza la variable resultados directamente
                       filteredOptionsMaterial = resultadosM
                           .where((opcion) => opcion.nombre
                               .toLowerCase()
                               .contains(value.toLowerCase()))
                           .map((opcion) {
-                        // Guarda el ID en la variable externa
                         if (showListMaterial) {
                           idMat = opcion.id!;
                         }
-                        // Retorna el texto para mostrar en la lista
                         String textoMaterial = opcion.nombre;
                         return '$textoMaterial|id:$idMat';
                       }).toList();
@@ -783,7 +740,6 @@ class _MyFormState extends State<MyForm> {
                   ),
                   readOnly: isMaterialSelected,
                   validator: (value) {
-                    // Validar si el campo está vacío solo si el usuario ha interactuado con él
                     if (_textEditingControllerMaterial.text.isEmpty &&
                         _textEditingControllerMaterial.text.isNotEmpty) {
                       return 'Este campo es obligatorio';
@@ -800,7 +756,6 @@ class _MyFormState extends State<MyForm> {
                       child: ListView.builder(
                         itemCount: filteredOptionsMaterial.length,
                         itemBuilder: (context, index) {
-                          // Divide el texto del problema y el ID del problema
                           List<String> partes =
                               filteredOptionsMaterial[index].split('|id:');
                           String textoMaterial = partes[0];
@@ -809,7 +764,6 @@ class _MyFormState extends State<MyForm> {
                           return ListTile(
                             title: Text(textoMaterial),
                             onTap: () {
-                              // Puedes acceder al ID del problema seleccionado aquí
                               int idMaterialSeleccionado = idMaterial;
                               handleSelectionMaterial(
                                   textoMaterial, idMaterialSeleccionado);
@@ -821,12 +775,12 @@ class _MyFormState extends State<MyForm> {
                     ),
                   ),
                 TextFormField(
+                  enabled: _areRemainingFieldsEnabled,
                   controller: _otroMPController,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   decoration:
                       const InputDecoration(labelText: 'Especifique otro'),
                   validator: (value) {
-                    // Validar si el campo está vacío solo si el usuario ha interactuado con él
                     if (_otroMPController.text.isEmpty &&
                         _otroMPController.text.isNotEmpty) {
                       return 'Este campo es obligatorio';
@@ -835,6 +789,7 @@ class _MyFormState extends State<MyForm> {
                   },
                 ),
                 TextFormField(
+                  enabled: _areRemainingFieldsEnabled,
                   keyboardType: TextInputType.number,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: _cantmatController,
@@ -844,7 +799,6 @@ class _MyFormState extends State<MyForm> {
                     FilteringTextInputFormatter.digitsOnly,
                   ],
                   validator: (value) {
-                    // Validar si el campo está vacío solo si el usuario ha interactuado con él
                     if (_cantmatController.text.isEmpty &&
                         _cantmatController.text.isNotEmpty) {
                       return 'Este campo es obligatorio';
@@ -866,8 +820,7 @@ class _MyFormState extends State<MyForm> {
                     scrollDirection: Axis.horizontal,
                     itemCount: images.length,
                     itemBuilder: (context, index) {
-                      return buildThumbnailWithCancel(images[index],
-                          index); // Usa la función para construir miniaturas con botón de cancelar
+                      return buildThumbnailWithCancel(images[index], index);
                     },
                   ),
                 ),
@@ -880,10 +833,11 @@ class _MyFormState extends State<MyForm> {
                     Flexible(
                       flex: 1,
                       child: ElevatedButton.icon(
-                        onPressed: () async {
-                          // Aquí se llama a la función para tomar fotos
-                          await _getImage();
-                        },
+                        onPressed: _areRemainingFieldsEnabled
+                            ? () async {
+                                await _getImage();
+                              }
+                            : null,
                         icon: const Icon(Icons.camera),
                         label: const Text('Tomar fotografía'),
                       ),
@@ -897,28 +851,9 @@ class _MyFormState extends State<MyForm> {
                     style: TextStyle(
                       fontSize: 25,
                     )),
-                /* Row(
-                  children: [
-                    Flexible(
-                      flex: 1,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return const AddMaterial(); // Aquí creas una instancia de tu pantalla AgregarProblema
-                            },
-                          );
-                        },
-                        icon: const Icon(Icons.add),
-                        label: const Text('Agregar nuevo material'),
-                      ),
-                    ),
-                  ],
-                ), */
                 TextFormField(
+                  enabled: _areRemainingFieldsEnabled,
                   focusNode: _focusNodeObr,
-                  //enabled: activarCampos,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: _textEditingControllerObra,
                   onChanged: (String value) async {
@@ -931,11 +866,9 @@ class _MyFormState extends State<MyForm> {
                               .toLowerCase()
                               .contains(value.toLowerCase()))
                           .map((opcion) {
-                        // Guarda el ID en la variable externa
                         if (showListObra) {
                           idObra = opcion.id!;
                         }
-                        // Retorna el texto para mostrar en la lista
                         String textoObra = opcion.nombre;
                         return '$textoObra|id:$idObra';
                       }).toList();
@@ -975,7 +908,6 @@ class _MyFormState extends State<MyForm> {
                       child: ListView.builder(
                         itemCount: filteredOptionsObra.length,
                         itemBuilder: (context, index) {
-                          // Divide el texto del problema y el ID del problema
                           List<String> partes =
                               filteredOptionsObra[index].split('|id:');
                           String textoObra = partes[0];
@@ -983,7 +915,6 @@ class _MyFormState extends State<MyForm> {
                           return ListTile(
                             title: Text(textoObra),
                             onTap: () {
-                              // Puedes acceder al ID del problema seleccionado aquí
                               int idObraSeleccionado = idObra;
                               handleSelectionObra(
                                   textoObra, idObraSeleccionado);
@@ -995,8 +926,8 @@ class _MyFormState extends State<MyForm> {
                     ),
                   ),
                 TextFormField(
+                  enabled: _areRemainingFieldsEnabled,
                   focusNode: _focusOtO,
-                  //enabled: activarCampos,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: _otroObraController,
                   decoration: const InputDecoration(
@@ -1010,9 +941,9 @@ class _MyFormState extends State<MyForm> {
                   },
                 ),
                 TextFormField(
+                  enabled: _areRemainingFieldsEnabled,
                   keyboardType: TextInputType.number,
                   focusNode: _cantidadFocus,
-                  //enabled: activarCampos,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   controller: _cantobraController,
                   decoration: const InputDecoration(
@@ -1028,32 +959,15 @@ class _MyFormState extends State<MyForm> {
                     return null;
                   },
                 ),
-
-                /* Row(
-                  children: [
-                    Flexible(
-                      flex: 1,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return const ManoObra();
-                            },
-                          );
-                        },
-                        icon: const Icon(Icons.add),
-                        label:
-                            const Text('Agregar descripción de mano de obra'),
-                      ),
-                    ),
-                  ],
-                ), */
                 const SizedBox(
                   height: 20,
                 ),
                 ElevatedButton(
-                  onPressed: _preguardarDatos,
+                  onPressed: _areRemainingFieldsEnabled
+                      ? () {
+                          _preguardarDatos();
+                        }
+                      : null,
                   key: null,
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Colors.white,
@@ -1079,8 +993,6 @@ class _MyFormState extends State<MyForm> {
                       DataColumn(label: Text('Cantidad Material')),
                       DataColumn(label: Text('Mano de Obra')),
                       DataColumn(label: Text('Cantidad Mano de Obra')),
-
-                      // Agregar una columna adicional para los botones de acción (editar, eliminar)
                       DataColumn(label: Text('Eliminar')),
                     ],
                     rows: datosIngresados.asMap().entries.map((entry) {
@@ -1146,8 +1058,6 @@ class _MyFormState extends State<MyForm> {
                             ),
                           ),
                         ),
-
-                        // Agregar botones de acción (Editar y Eliminar)
                         DataCell(
                           Row(
                             children: [
@@ -1169,7 +1079,7 @@ class _MyFormState extends State<MyForm> {
                       ? () {
                           guardarDatosConConfirmacion(context);
                         }
-                      : null, // Desactiva el botón si isGuardarHabilitado es falso
+                      : null,
                   key: null,
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Colors.white,
@@ -1188,14 +1098,6 @@ class _MyFormState extends State<MyForm> {
         ),
       ),
     );
-    /* } else {
-      // Si no hay conexión a Internet, mostrar el widget de No Internet
-      return const Scaffold(
-        body: Center(
-          child: NoInternet(), // Usar el widget NoInternetWidget
-        ),
-      );
-    } */
   }
 
   void mostrarFotoEnGrande(XFile image) {
@@ -1204,7 +1106,6 @@ class _MyFormState extends State<MyForm> {
       builder: (BuildContext context) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          // Establecer el color de fondo transparente
           child: Stack(
             children: [
               PhotoView(

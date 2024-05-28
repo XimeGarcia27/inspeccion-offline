@@ -12,20 +12,20 @@ Future<bool> mostrarDialogoConfirmacion(BuildContext context) async {
               TextButton(
                 child: const Text('Cancelar'),
                 onPressed: () {
-                  Navigator.of(context).pop(false); // Retorna false si cancela
+                  Navigator.of(context).pop(false);
                 },
               ),
               TextButton(
                 child: const Text('Aceptar'),
                 onPressed: () {
-                  Navigator.of(context).pop(true); // Retorna true si acepta
+                  Navigator.of(context).pop(true);
                 },
               ),
             ],
           );
         },
       ) ??
-      false; // Si showDialog devuelve null, retorna false por defecto
+      false;
 }
 
 // Función para mostrar un diálogo de confirmación
@@ -40,18 +40,18 @@ Future<bool> mostrarDialogoConfirmacionEditar(BuildContext context) async {
               TextButton(
                 child: const Text('Cancelar'),
                 onPressed: () {
-                  Navigator.of(context).pop(false); // Retorna false si cancela
+                  Navigator.of(context).pop(false);
                 },
               ),
               TextButton(
                 child: const Text('Aceptar'),
                 onPressed: () {
-                  Navigator.of(context).pop(true); // Retorna true si acepta
+                  Navigator.of(context).pop(true);
                 },
               ),
             ],
           );
         },
       ) ??
-      false; // Si showDialog devuelve null, retorna false por defecto
+      false;
 }

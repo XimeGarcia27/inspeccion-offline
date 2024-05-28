@@ -1,8 +1,6 @@
-import 'package:app_inspections/services/auth_service.dart';
 import 'package:app_inspections/src/pages/f1.dart';
 import 'package:app_inspections/src/pages/inicio_indv.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 class InspeccionTienda extends StatefulWidget {
   final int initialTabIndex;
@@ -38,8 +36,6 @@ class _InspeccionTiendaState extends State<InspeccionTienda>
 
   @override
   Widget build(BuildContext context) {
-    final authService = Provider.of<AuthService>(context, listen: false);
-    // Obtén los datos de la tienda desde los argumentos
     Map<String, dynamic> arguments =
         ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>;
     final String nombreTienda = arguments['nombreTienda'];
@@ -50,7 +46,6 @@ class _InspeccionTiendaState extends State<InspeccionTienda>
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, size: 40.0, color: Colors.white),
           onPressed: () {
-            // Puedes agregar código para manejar el evento de retroceso aquí
             Navigator.pushReplacementNamed(context, 'inicioInsp');
           },
         ),
@@ -69,7 +64,6 @@ class _InspeccionTiendaState extends State<InspeccionTienda>
           tabs: const [
             Tab(
               child: SizedBox(
-                // Especifica un ancho fijo para la pestaña "Inicio"
                 width: 100,
                 child: Row(
                   children: [
@@ -80,51 +74,17 @@ class _InspeccionTiendaState extends State<InspeccionTienda>
             ),
             Tab(
               child: SizedBox(
-                // Especifica un ancho fijo para la pestaña "Registro"
                 width: 100,
                 child: Text("Registro"),
               ),
             ),
           ],
         ),
-        actions: [
-          PopupMenuButton<PopupMenuEntry>(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                enabled: false,
-                child: Row(
-                  children: [
-                    const CircleAvatar(
-                      backgroundImage: AssetImage("assets/inicio.png"),
-                    ),
-                    const SizedBox(
-                        width: 10), // Espacio entre la imagen y el texto
-                    Text(
-                      ' ${authService.currentUser}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              PopupMenuItem(
-                child: const Text("Cerrar Sesión"),
-                onTap: () {
-                  authService.logout();
-                  Navigator.pushReplacementNamed(context, 'login');
-                },
-              ),
-            ],
-          ),
-        ],
       ),
       body: TabBarView(
         controller: controller,
         children: [
-          Inicio(
-              idTienda: idTi,
-              nomTienda: nombreTienda), // Aquí pasas el argumento a Inicio
+          Inicio(idTienda: idTi, nomTienda: nombreTienda),
           F1Screen(idTienda: idTi),
         ],
       ),

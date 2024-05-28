@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:app_inspections/models/tiendas.dart';
 import 'package:app_inspections/search/search_delegate.dart';
 import 'package:app_inspections/services/auth_service.dart';
@@ -37,11 +36,6 @@ class _HomeState extends State<Home> {
   void initState() {
     super.initState();
     loadTiendas();
-
-    @override
-    void dispose() {
-      super.dispose();
-    }
   }
 
   Future<void> loadTiendas() async {
@@ -84,8 +78,7 @@ class _HomeState extends State<Home> {
                     const CircleAvatar(
                       backgroundImage: AssetImage("assets/inicio.png"),
                     ),
-                    const SizedBox(
-                        width: 10), // Espacio entre la imagen y el texto
+                    const SizedBox(width: 10),
                     Text(
                       ' ${authService.currentUser}',
                       style: const TextStyle(fontWeight: FontWeight.bold),
@@ -98,7 +91,8 @@ class _HomeState extends State<Home> {
                 child: const Text("Cerrar Sesión"),
                 onTap: () {
                   authService.logout();
-                  Navigator.pushReplacementNamed(context, 'login');
+                  Navigator.pushNamedAndRemoveUntil(
+                      context, 'login', (route) => false);
                 },
               ),
             ],
@@ -129,7 +123,7 @@ class _HomeState extends State<Home> {
                 const SizedBox(height: 40),
                 Expanded(
                   child: tiendas.isEmpty
-                      ? Center(child: CircularProgressIndicator())
+                      ? const Center(child: CircularProgressIndicator())
                       : ListView.builder(
                           itemCount: tiendas.length,
                           itemBuilder: (context, index) {

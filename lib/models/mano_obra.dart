@@ -71,7 +71,8 @@ void insertInitialDataO() async {
       Obra(id: null, nombre: 'Marcos de 24", 36" y GU cargando tarimas'),
       Obra(
           id: null, nombre: 'Faltante de tornillo box bolt en marcos ARU y GU'),
-      Obra(id: null, nombre: 'Tabblones de madera a la interperie'),
+      Obra(id: null, nombre: 'Tablones de madera a la interperie'),
+      Obra(id: null, nombre: ''), //id:46
     ];
 
     // Verificar si ya existen datos en la tabla obra

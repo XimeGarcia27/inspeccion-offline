@@ -5,7 +5,6 @@ import 'package:app_inspections/models/models.dart';
 import 'package:app_inspections/models/problemas.dart';
 import 'package:app_inspections/models/reporte_model.dart';
 import 'package:app_inspections/models/usuarios.dart';
-import 'package:app_inspections/services/subir_online.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 // ignore: depend_on_referenced_packages
@@ -30,10 +29,9 @@ class DatabaseProvider {
       //creación de tabla tiendas
       await db.execute(
           "CREATE TABLE tiendas (id_tienda INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, cod_tienda INTEGER, nom_tienda TEXT, dist_tienda TEXT);");
-      //creación de tabla usuariosA
+      //creación de tabla usuarios
       await db.execute(
           "CREATE TABLE usuarios (id_usu INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, nombre TEXT NOT NULL, nom_usu TEXT NOT NULL, password TEXT NOT NULL);");
-
       //tabla de imagenes
       await db.execute(
           "CREATE TABLE images (id_img INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, imagen TEXT, dato_unico_rep TEXT NOT NULL, id_tienda TEXT NOT NULL);");
@@ -50,36 +48,30 @@ class DatabaseProvider {
   //método para insertar la lista de problemas
   static Future<Future<int>> insertProblem(Problemas problema) async {
     Database database = await openDB();
-
     return database.insert("problemas", problema.toMap());
   }
 
   //método para insertar la lista de materiales
   static Future<Future<int>> insertMaterial(Materiales material) async {
     Database database = await openDB();
-    print("MATERIALES $material");
-
     return database.insert("materiales", material.toMap());
   }
 
   //método para insertar la lista de mano de obra
   static Future<Future<int>> insertManoObra(Obra obr) async {
     Database database = await openDB();
-
     return database.insert("obra", obr.toMap());
   }
 
   //método para insertar la lista de tiendas
   static Future<Future<int>> insertTiendas(Tiendas tienda) async {
     Database database = await openDB();
-
     return database.insert("tiendas", tienda.toMap());
   }
 
   //método para insertar la lista de usuarios
   static Future<Future<int>> insertUsuarios(Usuarios usuario) async {
     Database database = await openDB();
-
     return database.insert("usuarios", usuario.toMap());
   }
 
@@ -87,17 +79,12 @@ class DatabaseProvider {
   static Future<int> insertReporte(Reporte reporte) async {
     try {
       Database database = await openDB();
-
       // Insertar el reporte en la base de datos local
       int id = await database.insert("reporte", reporte.toMap());
-
-      // Si hay conexión a Internet, sincronizar el reporte con la base de datos remota
-      insertarReporteOnline();
-
       return id;
     } catch (e) {
       // Manejar errores
-      print("NO SE PUDO INSERTAR EL REPORTE");
+      print("NO SE PUDO INSERTAR EL REPORTE $e");
       return -1; // Retornar un valor indicando un error, por ejemplo, -1
     }
   }
@@ -105,30 +92,51 @@ class DatabaseProvider {
   //método para insertar imagenes en local
   static Future<Future<int>> insertImagenes(Images imagen) async {
     Database database = await openDB();
-
     return database.insert("images", imagen.toMap());
   }
 
-  Future<void> editarReporte(Reporte reporte) async {
+  static Future<void> editarReporte(Reporte reporte) async {
     Database database = await openDB();
 
-    // Ejecutar la consulta UPDATE
-    await (database).update(
-      'reportes',
-      {'valor': reporte.nomDep},
-      where: 'id = ?',
-      whereArgs: [reporte.nomDep],
-    );
+    // Iniciar transacción
+    await database.transaction((txn) async {
+      try {
+        await txn.update(
+          'reporte',
+          {
+            'formato': reporte.formato,
+            'nom_dep': reporte.nomDep,
+            'clave_ubi': reporte.claveUbi,
+            'id_probl': reporte.idProbl,
+            'nom_probl': reporte.nomProbl,
+            'id_mat': reporte.idMat,
+            'nom_mat': reporte.nomMat,
+            'otro': reporte.otro,
+            'cant_mat': reporte.cantMat,
+            'id_obra': reporte.idObr,
+            'nom_obr': reporte.nomObr,
+            'otro_obr': reporte.otroObr,
+            'cant_obr': reporte.cantObr
+          },
+          where: 'id_rep = ?',
+          whereArgs: [reporte.idReporte],
+        );
+        int? id = reporte.idReporte;
+        print("REPORTE EDITADO CORRECTAMENTE $id");
+      } catch (e) {
+        // Manejar el error adecuadamente (notificar al usuario, revertir cambios, etc.)
+        print("Error al editar el reporte $e");
+      }
+    });
 
     // Cerrar la conexión
-    await (await database).close();
+    await database.close();
   }
 
   static Future<List<Problemas>> showProblemas() async {
     Database database = await openDB();
     final List<Map<String, dynamic>> problemasMap =
         await database.query("problemas");
-
     return List.generate(
         problemasMap.length,
         (i) => Problemas(
@@ -143,7 +151,6 @@ class DatabaseProvider {
     Database database = await openDB();
     final List<Map<String, dynamic>> materialesMap =
         await database.query("materiales");
-
     return List.generate(
         materialesMap.length,
         (i) => Materiales(
@@ -294,6 +301,7 @@ class DatabaseProvider {
 
       return results
           .map((row) => Reporte(
+                idReporte: row['id_rep'],
                 formato: row['formato'],
                 nomDep: row['nom_dep'],
                 claveUbi: row['clave_ubi'],
@@ -337,13 +345,13 @@ class DatabaseProvider {
         "SELECT * FROM reporte WHERE id_tienda = ? AND formato = 'F1'",
         [idtienda],
       );
-      //print('despues de la consulta');
       if (kDebugMode) {
         print('Resultados de la consulta: $results');
       }
 
       return results
           .map((row) => Reporte(
+                idReporte: row['id_rep'],
                 formato: row['formato'],
                 nomDep: row['nom_dep'],
                 claveUbi: row['clave_ubi'],
@@ -387,13 +395,13 @@ class DatabaseProvider {
         "SELECT * FROM reporte WHERE id_tienda = ? AND formato = 'F2'",
         [idtienda],
       );
-      //print('despues de la consulta');
       if (kDebugMode) {
         print('Resultados de la consulta: $results');
       }
 
       return results
           .map((row) => Reporte(
+                idReporte: row['id_rep'],
                 formato: row['formato'],
                 nomDep: row['nom_dep'],
                 claveUbi: row['clave_ubi'],
@@ -430,41 +438,81 @@ class DatabaseProvider {
     }
   }
 
-  //vincular bd con postgre
-  static Future<List<Reporte>> leerReportesDesdeSQLite() async {
-    // Abrir la conexión a la base de datos SQLite
+  static Future<List<Map<String, dynamic>>> mostrarCantidadesF1(
+      int idTienda) async {
     Database database = await openDB();
+    try {
+      final results = await database.rawQuery('''
+      SELECT nom_mat, SUM(cant_mat) as cantidad_total 
+      FROM reporte 
+      WHERE id_tienda = $idTienda AND formato = 'F1'
+      GROUP BY nom_mat
+    ''');
 
-    // Ejecutar una consulta para obtener los datos de la tabla 'reporte'
-    final resultados = await database.query('reporte');
-    //print("REPORTES EN MI BD LOCAL $resultados");
+      // Filtrar los resultados para excluir registros donde nom_mat es nulo o vacío
+      final filteredResults = results
+          .where((row) => row['nom_mat'] != null && row['nom_mat'] != '');
 
-    // Mapear los resultados a objetos Reporte
-    final reportes = resultados.map((row) => Reporte.fromMap(row)).toList();
-    print("REPORTES EN MI BD LOCAL $reportes");
-
-    //Cerrar la conexión a la base de datos
-    //await database.close();
-
-    return reportes;
+      return filteredResults.toList();
+    } catch (e) {
+      // Manejar errores
+      print('Error al ejecutar la consulta: $e');
+      return [];
+    } finally {
+      // Cerrar la conexión
+      await database.close();
+    }
   }
 
-  //leer fotos para subirlas a postgre y a firebase
-  static Future<List<Images>> leerFotosDesdeSQLite() async {
-    // Abrir la conexión a la base de datos SQLite
+  static Future<List<Map<String, dynamic>>> mostrarCantidadesF2(
+      int idTienda) async {
     Database database = await openDB();
+    try {
+      final results = await database.rawQuery('''
+      SELECT nom_mat, SUM(cant_mat) as cantidad_total 
+      FROM reporte 
+      WHERE id_tienda = $idTienda AND formato = 'F2'
+      GROUP BY nom_mat
+    ''');
 
-    // Ejecutar una consulta para obtener los datos de la tabla 'reporte'
-    final resultados = await database.query('images');
-    //print("REPORTES EN MI BD LOCAL $resultados");
+      // Filtrar los resultados para excluir registros donde nom_mat es nulo o vacío
+      final filteredResults = results
+          .where((row) => row['nom_mat'] != null && row['nom_mat'] != '');
 
-    // Mapear los resultados a objetos Reporte
-    final imagenes = resultados.map((row) => Images.fromMap(row)).toList();
-    print("Imagenes EN MI BD LOCAL $imagenes");
+      return filteredResults.toList();
+    } catch (e) {
+      // Manejar errores
+      print('Error al ejecutar la consulta: $e');
+      return [];
+    } finally {
+      // Cerrar la conexión
+      await database.close();
+    }
+  }
 
-    //Cerrar la conexión a la base de datos
-    //await database.close();
+  static Future<List<Map<String, dynamic>>> mostrarCantidadesObra(
+      int idTienda) async {
+    Database database = await openDB();
+    try {
+      final results = await database.rawQuery('''
+      SELECT nom_obr, SUM(cant_obr) as cantidad_total 
+      FROM reporte 
+      WHERE id_tienda = $idTienda 
+      GROUP BY nom_obr 
+    ''');
 
-    return imagenes;
+      // Filtrar los resultados para excluir registros donde nom_mat es nulo o vacío
+      final filteredResults = results
+          .where((row) => row['nom_obr'] != null && row['nom_obr'] != '');
+
+      return filteredResults.toList();
+    } catch (e) {
+      // Manejar errores
+      print('Error al ejecutar la consulta: $e');
+      return [];
+    } finally {
+      // Cerrar la conexión
+      await database.close();
+    }
   }
 }

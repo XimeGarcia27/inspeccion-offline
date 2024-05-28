@@ -3,24 +3,19 @@ import 'dart:io';
 import 'package:app_inspections/models/mano_obra.dart';
 import 'package:app_inspections/models/materiales.dart';
 import 'package:app_inspections/models/problemas.dart';
-import 'package:app_inspections/services/auth_service.dart';
-import 'package:app_inspections/services/db.dart';
+import 'package:app_inspections/models/reporte_model.dart';
 import 'package:app_inspections/services/db_offline.dart';
 import 'package:app_inspections/services/functions.dart';
-import 'package:app_inspections/src/pages/connection/no_internet.dart';
-import 'package:app_inspections/src/pages/utils/check_internet_connection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:photo_view/photo_view.dart';
-import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:convert';
 
 class EditarForm extends StatelessWidget {
   final int idTienda;
-  final Map<String, dynamic> data;
-
+  final Reporte data;
   final String nombreTienda;
   const EditarForm(
       {super.key,
@@ -30,15 +25,12 @@ class EditarForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authService = Provider.of<AuthService>(context, listen: false);
-    print("DATAAAA $data");
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 100,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, size: 40.0, color: Colors.white),
           onPressed: () {
-            // Puedes agregar código para manejar el evento de retroceso aquí
             Navigator.of(context).pop();
           },
         ),
@@ -48,37 +40,6 @@ class EditarForm extends StatelessWidget {
           style: const TextStyle(fontSize: 24.0, color: Colors.white),
         ),
         centerTitle: true,
-        actions: [
-          PopupMenuButton<PopupMenuEntry>(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                enabled: false,
-                child: Row(
-                  children: [
-                    const CircleAvatar(
-                      backgroundImage: AssetImage("assets/inicio.png"),
-                    ),
-                    const SizedBox(
-                        width: 10), // Espacio entre la imagen y el texto
-                    Text(
-                      ' ${authService.currentUser}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              PopupMenuItem(
-                child: const Text("Cerrar Sesión"),
-                onTap: () {
-                  authService.logout();
-                  Navigator.pushReplacementNamed(context, 'login');
-                },
-              ),
-            ],
-          ),
-        ],
       ),
       body: EditMyForm(
         idTienda: idTienda,
@@ -93,7 +54,7 @@ class EditarForm extends StatelessWidget {
 class EditMyForm extends StatefulWidget {
   final int idTienda;
   final BuildContext context;
-  final Map<String, dynamic> data;
+  final Reporte data;
   final String nombreTienda;
 
   const EditMyForm(
@@ -110,49 +71,34 @@ class EditMyForm extends StatefulWidget {
 }
 
 class _EditMyFormState extends State<EditMyForm> {
-  //verificar la conexion a internet
-  late final CheckInternetConnection _internetConnection;
-  late StreamSubscription<ConnectionStatus> _connectionSubscription;
-  ConnectionStatus _currentStatus = ConnectionStatus.online;
-
   final int idTienda;
   String idTien = '';
   String nombreTienda = '';
 
+  @override
   final BuildContext context;
   bool _isLoading = true;
 
-  bool _isButtonDisabled = true;
-  String fotos = "";
+  late List<String> fotos;
 
   @override
   void initState() {
     super.initState();
-    _internetConnection = CheckInternetConnection();
-    _connectionSubscription =
-        _internetConnection.internetStatus().listen((status) {
-      setState(() {
-        _currentStatus = status;
-      });
-    });
-    idReporte = widget.data['id_rep'].toString();
-    selectedFormato = widget.data['formato'];
-    _departamentoController.text = widget.data['nom_dep'];
-    _ubicacionController.text = widget.data['clave_ubi'];
-    idProbl = widget.data['id_probl'];
-    idMat = widget.data['id_mat'];
-    idObra = widget.data['id_obra'];
-    _cantmatController.text = widget.data['cant_mat'].toString();
-    _cantobraController.text = widget.data['cant_obr'].toString();
-    _otroMPController.text = widget.data['otro'];
-    _otroObraController.text = widget.data['otro_obr'];
-    fotos = widget.data['foto'];
+    idReporte = widget.data.idReporte ?? 0;
+    formato = widget.data.formato ?? '';
+    _departamentoController.text = widget.data.nomDep ?? '';
+    _ubicacionController.text = widget.data.claveUbi ?? '';
+    idProbl = widget.data.idProbl ?? 0;
+    idMat = widget.data.idMat ?? 0;
+    idObra = widget.data.idObr ?? 0;
+    _cantmatController.text = widget.data.cantMat.toString();
+    _cantobraController.text = widget.data.cantObr.toString();
+    _otroMPController.text = widget.data.otro ?? '';
+    _otroObraController.text = widget.data.otroObr ?? '';
+    fotos = widget.data.foto != null
+        ? List<String>.from(jsonDecode(widget.data.foto!))
+        : [];
     _cargarDatosAsync();
-    print("id problema $idProbl");
-    print("id material $idMat");
-    print("id obra $idObra");
-    print("fotos $fotos");
-    print("id reporte $idReporte");
   }
 
   //campos de la base de datos
@@ -167,8 +113,8 @@ class _EditMyFormState extends State<EditMyForm> {
   int idProbl = 0;
   int idMat = 0;
   int idObra = 0;
-  String idReporte = "";
-  String selectedFormato = "F1";
+  int idReporte = 0;
+  String formato = "";
 
   _EditMyFormState({required this.idTienda, required this.context});
 
@@ -209,17 +155,8 @@ class _EditMyFormState extends State<EditMyForm> {
       if (defectos.isNotEmpty) {
         // Itera sobre cada defecto en la lista
         for (Problemas defecto in defectos) {
-          // Accede a los datos del defecto
           String nombreProblema = defecto.nombre;
-          String codigoProblema = defecto.codigo;
-          String formatoProblema = defecto.formato;
-          print("nombre problema $nombreProblema");
-
           _textEditingControllerProblema.text = nombreProblema;
-
-          // Usa los datos como necesites
-          print(
-              'Nombre: $nombreProblema, Código: $codigoProblema, Formato: $formatoProblema');
         }
       } else {
         // Manejo si no se encontraron defectos
@@ -237,28 +174,19 @@ class _EditMyFormState extends State<EditMyForm> {
 
   Future<void> editarMaterial() async {
     try {
-      // Llama al método para obtener los defectos por su ID
       List<Materiales> materiales =
-          await DatabaseProvider.obtenerMaterialPorId(idProbl);
+          await DatabaseProvider.obtenerMaterialPorId(idMat);
       if (materiales.isNotEmpty) {
-        // Itera sobre cada defecto en la lista
         for (Materiales material in materiales) {
-          // Accede a los datos del defecto
           String nombreMaterial = material.nombre;
-
           _textEditingControllerMaterial.text = nombreMaterial;
-
-          // Usa los datos como necesites
-          print('Nombre: $nombreMaterial');
         }
       } else {
-        // Manejo si no se encontraron defectos
         if (kDebugMode) {
           print("NO HAY DATOS");
         }
       }
     } catch (error) {
-      // Maneja cualquier error que ocurra durante la ejecución
       if (kDebugMode) {
         print('Error en editarDefecto: $error');
       }
@@ -267,68 +195,43 @@ class _EditMyFormState extends State<EditMyForm> {
 
   Future<void> editarManoObra() async {
     try {
-      // Llama al método para obtener los defectos por su ID
-      List<Obra> obras = await DatabaseProvider.obtenerObraPorId(idProbl);
+      List<Obra> obras = await DatabaseProvider.obtenerObraPorId(idObra);
       if (obras.isNotEmpty) {
-        // Itera sobre cada defecto en la lista
         for (Obra obra in obras) {
-          // Accede a los datos del defecto
           String nombreObra = obra.nombre;
 
           _textEditingControllerObra.text = nombreObra;
 
-          // Usa los datos como necesites
           print('Nombre: $nombreObra');
         }
       } else {
-        // Manejo si no se encontraron defectos
         if (kDebugMode) {
           print("NO HAY DATOS");
         }
       }
     } catch (error) {
-      // Maneja cualquier error que ocurra durante la ejecución
       if (kDebugMode) {
         print('Error en editarDefecto: $error');
       }
     }
   }
 
-  /* void _removeImage(int index) {
-    setState(() {
-      // Elimina la imagen de la lista de imágenes
-      images.removeAt(index);
-
-      // Elimina la ruta de la imagen de la lista de rutas de imágenes
-      String imagePathToRemove = fotos[index];
-      File(imagePathToRemove).deleteSync();
-      fotos.removeAt(index);
-      print("IMAGENES DE LA LISTA $fotos");
-    });
-  } */
-
   Future<void> _cargarDatosAsync() async {
     try {
-      // Realiza las operaciones asíncronas para cargar los datos
       await editarDefecto();
       await editarMaterial();
       await editarManoObra();
-
-      // Una vez que las operaciones están completas, actualiza el estado para ocultar el indicador de carga
       setState(() {
         _isLoading = true;
       });
 
-      // Inicia un temporizador para ocultar el indicador de carga después de un tiempo determinado
       Timer(const Duration(seconds: 1), () {
         setState(() {
           _isLoading = false;
         });
       });
     } catch (e) {
-      // Manejo de errores
-      Text('Error al cargar los datos: $e');
-      // Aquí puedes mostrar un mensaje al usuario informándole sobre el error
+      const Text('¡Intente de nuevo por favor!');
     }
   }
 
@@ -336,36 +239,28 @@ class _EditMyFormState extends State<EditMyForm> {
       String selectedOptionMaterial, int idMaterialSeleccionado) {
     setState(() {
       _textEditingControllerMaterial.text = selectedOptionMaterial;
-      showListMaterial = false; // Ocultar la lista después de la selección
+      showListMaterial = false;
       isMaterialSelected = true;
-      //_idmatController.text = idMat.toString();
       idMat = idMaterialSeleccionado;
-      if (kDebugMode) {
-        print('ID del material seleccionado: $idMat');
-      }
     });
   }
 
-  void handleSelectionProblem(
-      String selectedOptionProblem, int idProblemaSeleccionado) {
+  void handleSelectionProblem(String selectedOptionProblem,
+      int idProblemaSeleccionado, String textoFormato) {
     setState(() {
       _textEditingControllerProblema.text = selectedOptionProblem;
       showListProblemas = false;
       isProblemSelected = true;
-      //_idproblController.text = idProbl.toString();
       idProbl = idProblemaSeleccionado;
-      //print('ID del problema seleccionado: $idProbl');
     });
   }
 
   void handleSelectionObra(String selectedOptionObra, int idObraSeleccionado) {
     setState(() {
       _textEditingControllerObra.text = selectedOptionObra;
-      showListObra = false; // Ocultar la lista después de la selección
+      showListObra = false;
       isObraSelected = true;
-      //_idobraController.text = idObra.toString();
       idObra = idObraSeleccionado;
-      //print('OBRAA SELECCIONADO: $idObra');
     });
   }
 
@@ -373,11 +268,8 @@ class _EditMyFormState extends State<EditMyForm> {
   void guardarDatosConConfirmacion(BuildContext context) async {
     bool confirmacion = await mostrarDialogoConfirmacionEditar(context);
     if (confirmacion == true) {
-      // Ejecutar la función _guardarDatos si el usuario acepta
       _editarDatos();
-    } else {
-      // No hacer nada si el usuario  cancela
-    }
+    } else {}
   }
 
   void _editarDatos() {
@@ -391,9 +283,8 @@ class _EditMyFormState extends State<EditMyForm> {
       String nomObra = _textEditingControllerObra.text;
       String otro = _otroMPController.text;
       String otroO = _otroObraController.text;
-      int cantM = widget.data['cant_mat'];
-      int cantO = widget.data['cant_obr'];
-      //idReporte = widget.data['id_rep'];
+      int? cantM = widget.data.cantMat;
+      int? cantO = widget.data.cantObr;
 
       try {
         if (valorCanMate.isNotEmpty) {
@@ -402,25 +293,28 @@ class _EditMyFormState extends State<EditMyForm> {
         if (valorCanObra.isNotEmpty) {
           cantO = int.parse(valorCanObra);
         }
-        /*DatabaseHelper.editarReporte(
-          idReporte,
-          selectedFormato,
-          valorDepartamento,
-          valorUbicacion,
-          idProbl,
-          nomProbl,
-          idMat,
-          nomMat,
-          otro,
-          cantM,
-          idObra,
-          nomObra,
-          otroO,
-          cantO,
-          idTiend,
-        );*/
 
-        // Muestra una alerta de "Edición terminada"
+        Reporte nuevoReporte = Reporte(
+          idReporte: idReporte,
+          formato: formato,
+          nomDep: valorDepartamento,
+          claveUbi: valorUbicacion,
+          idProbl: idProbl,
+          nomProbl: nomProbl,
+          idMat: idMat,
+          nomMat: nomMat,
+          otro: otro,
+          cantMat: cantM,
+          idObr: idObra,
+          nomObr: nomObra,
+          otroObr: otroO,
+          cantObr: cantO,
+          foto: fotos.toString(),
+          lastUpdated: DateTime.now().toIso8601String(),
+        );
+
+        DatabaseProvider.editarReporte(nuevoReporte);
+
         showDialog(
           context: context,
           builder: (BuildContext context) {
@@ -448,8 +342,6 @@ class _EditMyFormState extends State<EditMyForm> {
           },
         );
       } catch (e) {
-        // Manejo de errores
-        // Muestra una alerta de "Edición terminada"
         showDialog(
           context: context,
           builder: (BuildContext context) {
@@ -476,7 +368,6 @@ class _EditMyFormState extends State<EditMyForm> {
             );
           },
         );
-        // Puedes mostrar un mensaje de error al usuario si lo deseas
       }
     }
   }
@@ -498,519 +389,439 @@ class _EditMyFormState extends State<EditMyForm> {
     List<Materiales> resultadosM = [];
     List<Obra> resultadosO = [];
 
-    if (_currentStatus == ConnectionStatus.online) {
-      return Scaffold(
-        body: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 30),
-          child: Form(
-            key: formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  Text('Editar Inspección',
-                      style: Theme.of(context).textTheme.headlineMedium),
-                  /* DropdownButtonFormField(
-                  value: selectedFormato,
-                  onChanged: (newValue) {
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 30),
+        child: Form(
+          key: formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                Text('Editar Inspección',
+                    style: Theme.of(context).textTheme.headlineMedium),
+                TextFormField(
+                  controller: _departamentoController,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  validator: (value) {
+                    if (_departamentoController.text.isEmpty &&
+                        _departamentoController.text.isNotEmpty) {
+                      return 'Este campo es obligatorio';
+                    }
+                    return null;
+                  },
+                  decoration: const InputDecoration(labelText: 'Departamento'),
+                ),
+                TextFormField(
+                  controller: _ubicacionController,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  decoration:
+                      const InputDecoration(labelText: 'Ubicación (Bahia)'),
+                  validator: (value) {
+                    if (_ubicacionController.text.isEmpty &&
+                        _ubicacionController.text.isNotEmpty) {
+                      return 'Este campo es obligatorio';
+                    }
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  controller: _textEditingControllerProblema,
+                  onChanged: (String value) async {
+                    resultadosP = await DatabaseProvider.showProblemas();
                     setState(() {
-                      selectedFormato = newValue!;
+                      showListProblemas = value.isNotEmpty;
+                      filteredOptionsProblema = resultadosP
+                          .where((opcion) =>
+                              opcion.codigo
+                                  .toLowerCase()
+                                  .contains(value.toLowerCase()) ||
+                              opcion.nombre
+                                  .toLowerCase()
+                                  .contains(value.toLowerCase()))
+                          .map((opcion) {
+                        // Guarda el ID en la variable externa
+                        // Establecer como null por defecto
+                        if (showListProblemas) {
+                          idProbl = opcion.id!;
+                          formato = opcion.formato;
+                        }
+
+                        String textoProblema = opcion.nombre;
+
+                        return '$textoProblema|id:$idProbl|formato:$formato';
+                      }).toList();
                     });
                   },
-                  items: <String>['F1', 'F2']
-                      .map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
-                  decoration: const InputDecoration(
-                      labelText:
-                          'Selecciona el formato de tu defecto (F1 o F2)'),
-                ), */
-                  TextFormField(
-                    controller: _departamentoController,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    validator: (value) {
-                      if (_departamentoController.text.isEmpty &&
-                          _departamentoController.text.isNotEmpty) {
-                        return 'Este campo es obligatorio';
-                      }
-                      return null;
-                    },
-                    decoration:
-                        const InputDecoration(labelText: 'Departamento'),
+                  decoration: InputDecoration(
+                    labelText: 'Escribe o selecciona un defecto',
+                    suffixIcon: _textEditingControllerProblema.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              setState(() {
+                                _textEditingControllerProblema.clear();
+                                isProblemSelected = false;
+                                showListProblemas =
+                                    true; // Muestra la lista nuevamente al eliminar la opción
+                              });
+                            },
+                          )
+                        : null,
                   ),
-                  TextFormField(
-                    controller: _ubicacionController,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    decoration:
-                        const InputDecoration(labelText: 'Ubicación (Bahia)'),
-                    validator: (value) {
-                      // Validar si el campo está vacío solo si el usuario ha interactuado con él
-                      if (_ubicacionController.text.isEmpty &&
-                          _ubicacionController.text.isNotEmpty) {
-                        return 'Este campo es obligatorio';
-                      }
-                      return null;
-                    },
-                  ),
-                  TextFormField(
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    controller: _textEditingControllerProblema,
-                    onChanged: (String value) async {
-                      resultadosP = await DatabaseProvider.showProblemas();
-                      idProbl = 0;
-                      setState(() {
-                        showListProblemas = value.isNotEmpty;
-                        // Utiliza la variable resultados directamente
-                        filteredOptionsProblema = resultadosP
-                            .where((opcion) =>
-                                opcion.codigo
-                                    .toLowerCase()
-                                    .contains(value.toLowerCase()) ||
-                                opcion.nombre
-                                    .toLowerCase()
-                                    .contains(value.toLowerCase()))
-                            .map((opcion) {
-                          // Guarda el ID en la variable externa
-                          // Establecer como null por defecto
-                          if (showListProblemas) {
-                            idProbl = opcion.id!;
-                          }
-
-                          String textoProblema = opcion.nombre;
-                          print("problema $textoProblema");
-                          return '$textoProblema|id:$idProbl';
-                        }).toList();
-                      });
-                    },
-                    decoration: InputDecoration(
-                      labelText: 'Escribe o selecciona un defecto',
-                      suffixIcon: _textEditingControllerProblema.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                setState(() {
-                                  _textEditingControllerProblema.clear();
-                                  isProblemSelected = false;
-                                  showListProblemas =
-                                      true; // Muestra la lista nuevamente al eliminar la opción
-                                  print("VISIBILIDAD ONE $showListProblemas");
-                                });
-                              },
-                            )
-                          : null,
-                    ),
-                    readOnly: isProblemSelected,
-                    validator: (value) {
-                      // Validar si el campo está vacío solo si el usuario ha interactuado con él
-                      if (_textEditingControllerProblema.text.isEmpty &&
-                          _textEditingControllerProblema.text.isNotEmpty) {
-                        return 'Este campo es obligatorio';
-                      }
-                      return null;
-                    },
-                  ),
-                  if (showListProblemas)
-                    Visibility(
-                      visible: showListProblemas &&
-                          filteredOptionsProblema.isNotEmpty,
-                      child: SizedBox(
-                        height: 200,
-                        child: ListView.builder(
-                          itemCount: filteredOptionsProblema.length,
-                          itemBuilder: (context, i) {
-                            print("VISIBILIDAD $showListProblemas");
-                            // Divide el texto del problema y el ID del problema
-                            List<String> partes =
-                                filteredOptionsProblema[i].split('|');
-                            print("PARTES DE LA SELECCIÓN $partes");
-                            String textoProblema = partes[0];
-                            int idProblema = int.parse(
-                                partes[1].substring(3)); // Para eliminar 'id:'
-                            return ListTile(
-                              title: Text(textoProblema),
-                              onTap: () {
-                                int idProblemaSeleccionado = idProblema;
-                                print("ID PROBLEMA $idProblemaSeleccionado");
-                                handleSelectionProblem(
-                                    textoProblema, idProblemaSeleccionado);
-                                showListProblemas = false;
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  TextFormField(
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    controller: _textEditingControllerMaterial,
-                    onChanged: (String value) async {
-                      resultadosM = await DatabaseProvider.showMateriales();
-                      idMat = 0;
-                      setState(() {
-                        showListMaterial = value.isNotEmpty;
-                        // Utiliza la variable resultados directamente
-                        filteredOptionsMaterial = resultadosM
-                            .where((opcion) => opcion.nombre
-                                .toLowerCase()
-                                .contains(value.toLowerCase()))
-                            .map((opcion) {
-                          // Guarda el ID en la variable externa
-                          if (showListMaterial) {
-                            idMat = opcion.id!;
-                          }
-                          // Retorna el texto para mostrar en la lista
-                          String textoMaterial = opcion.nombre;
-                          return '$textoMaterial|id:$idMat';
-                        }).toList();
-                      });
-                    },
-                    decoration: InputDecoration(
-                      labelText: 'Escribe o selecciona un material',
-                      suffixIcon: _textEditingControllerMaterial.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                setState(() {
-                                  _textEditingControllerMaterial.clear();
-                                  isMaterialSelected = false;
-                                  showListMaterial = true;
-                                });
-                              },
-                            )
-                          : null,
-                    ),
-                    readOnly: isMaterialSelected,
-                    validator: (value) {
-                      // Validar si el campo está vacío solo si el usuario ha interactuado con él
-                      if (_textEditingControllerMaterial.text.isEmpty &&
-                          _textEditingControllerMaterial.text.isNotEmpty) {
-                        return 'Este campo es obligatorio';
-                      }
-                      return null;
-                    },
-                  ),
-                  if (showListMaterial)
-                    Visibility(
-                      visible: showListMaterial &&
-                          filteredOptionsMaterial.isNotEmpty,
-                      child: SizedBox(
-                        height: 200,
-                        child: ListView.builder(
-                          itemCount: filteredOptionsMaterial.length,
-                          itemBuilder: (context, index) {
-                            // Divide el texto del problema y el ID del problema
-                            List<String> partes =
-                                filteredOptionsMaterial[index].split('|id:');
-                            String textoMaterial = partes[0];
-                            int idMaterial = int.parse(partes[1]);
-                            print("MATERIALESS $partes");
-                            return ListTile(
-                              title: Text(textoMaterial),
-                              onTap: () {
-                                // Puedes acceder al ID del problema seleccionado aquí
-                                int idMaterialSeleccionado = idMaterial;
-                                handleSelectionMaterial(
-                                    textoMaterial, idMaterialSeleccionado);
-                                showListMaterial = false;
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  TextFormField(
-                    controller: _otroMPController,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    decoration:
-                        const InputDecoration(labelText: 'Especifique otro'),
-                    validator: (value) {
-                      // Validar si el campo está vacío solo si el usuario ha interactuado con él
-                      if (_otroMPController.text.isEmpty &&
-                          _otroMPController.text.isNotEmpty) {
-                        return 'Este campo es obligatorio';
-                      }
-                      return null;
-                    },
-                  ),
-                  TextFormField(
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    controller: _cantmatController,
-                    decoration: const InputDecoration(
-                        labelText: 'Cantidad de Material'),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
-                    validator: (value) {
-                      // Validar si el campo está vacío solo si el usuario ha interactuado con él
-                      if (_cantmatController.text.isEmpty &&
-                          _cantmatController.text.isNotEmpty) {
-                        return 'Este campo es obligatorio';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  const Text('Fotos',
-                      style: TextStyle(
-                        fontSize: 20,
-                      )),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    height: 80,
-                    //width: 200,
+                  readOnly: isProblemSelected,
+                  validator: (value) {
+                    // Validar si el campo está vacío solo si el usuario ha interactuado con él
+                    if (_textEditingControllerProblema.text.isEmpty &&
+                        _textEditingControllerProblema.text.isNotEmpty) {
+                      return 'Este campo es obligatorio';
+                    }
+                    return null;
+                  },
+                ),
+                if (showListProblemas)
+                  Visibility(
+                    visible:
+                        showListProblemas && filteredOptionsProblema.isNotEmpty,
                     child: SizedBox(
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        children: fotos.split(",").map<Widget>((url) {
-                          return Padding(
-                            padding: const EdgeInsets.all(4),
-                            child: Stack(
-                              children: [
-                                // Imagen
-                                InkWell(
-                                  onTap: () {
-                                    // Muestra la imagen en una vista modal o un diálogo
-                                    showDialog(
-                                      context: context,
-                                      builder: (context) => AlertDialog(
-                                        content: Image.file(
-                                          File(url.trim()),
-                                          errorBuilder:
-                                              (context, error, stackTrace) {
-                                            // Manejar el error y mostrar una imagen de respaldo
-                                            return Image.asset(
-                                              'assets/no_image.png',
-                                              width: 70,
-                                              height: 70,
-                                            );
-                                          },
-                                          width: 500,
-                                          height: 500,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
+                      height: 200,
+                      child: ListView.builder(
+                        itemCount: filteredOptionsProblema.length,
+                        itemBuilder: (context, i) {
+                          // Divide el texto del problema y el ID del problema
+                          List<String> partes =
+                              filteredOptionsProblema[i].split('|');
+                          print("PARTES DE LA SELECCIÓN $partes");
+                          String textoProblema = partes[0];
+                          int idProblema = int.parse(
+                              partes[1].substring(3)); // Para eliminar 'id:'
+                          String textoFormato = partes[2]
+                              .substring(8); // Para eliminar 'formato:'
+                          return ListTile(
+                            title: Text(textoProblema),
+                            onTap: () {
+                              int idProblemaSeleccionado = idProblema;
+                              handleSelectionProblem(textoProblema,
+                                  idProblemaSeleccionado, textoFormato);
+                              showListProblemas = false;
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                const SizedBox(
+                  height: 20,
+                ),
+                TextFormField(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  controller: _textEditingControllerMaterial,
+                  onChanged: (String value) async {
+                    resultadosM = await DatabaseProvider.showMateriales();
+                    setState(() {
+                      showListMaterial = value.isNotEmpty;
+                      filteredOptionsMaterial = resultadosM
+                          .where((opcion) => opcion.nombre
+                              .toLowerCase()
+                              .contains(value.toLowerCase()))
+                          .map((opcion) {
+                        String textoMaterial = opcion.nombre;
+                        int idMaterial = showListMaterial ? opcion.id! : 173;
+                        return '$textoMaterial|id:$idMaterial';
+                      }).toList();
+                    });
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'Escribe o selecciona un material',
+                    suffixIcon: _textEditingControllerMaterial.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              setState(() {
+                                _textEditingControllerMaterial.clear();
+                                isMaterialSelected = false;
+                                showListMaterial = true;
+                                idMat = 173;
+                              });
+                            },
+                          )
+                        : null,
+                  ),
+                  readOnly: isMaterialSelected,
+                  validator: (value) {
+                    if (_textEditingControllerMaterial.text.isEmpty &&
+                        _textEditingControllerMaterial.text.isNotEmpty) {
+                      return 'Este campo es obligatorio';
+                    }
+                    return null;
+                  },
+                ),
+                if (showListMaterial)
+                  Visibility(
+                    visible:
+                        showListMaterial && filteredOptionsMaterial.isNotEmpty,
+                    child: SizedBox(
+                      height: 200,
+                      child: ListView.builder(
+                        itemCount: filteredOptionsMaterial.length,
+                        itemBuilder: (context, index) {
+                          List<String> partes =
+                              filteredOptionsMaterial[index].split('|id:');
+                          String textoMaterial = partes[0];
+                          int idMaterial = int.parse(partes[1]);
+                          print("MATERIALESS $partes");
+                          return ListTile(
+                            title: Text(textoMaterial),
+                            onTap: () {
+                              int idMaterialSeleccionado = idMaterial;
+                              handleSelectionMaterial(
+                                  textoMaterial, idMaterialSeleccionado);
+                              showListMaterial = false;
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                TextFormField(
+                  controller: _otroMPController,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  decoration:
+                      const InputDecoration(labelText: 'Especifique otro'),
+                  validator: (value) {
+                    if (_otroMPController.text.isEmpty &&
+                        _otroMPController.text.isNotEmpty) {
+                      return 'Este campo es obligatorio';
+                    }
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  keyboardType: TextInputType.number,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  controller: _cantmatController,
+                  decoration:
+                      const InputDecoration(labelText: 'Cantidad de Material'),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                  validator: (value) {
+                    if (_cantmatController.text.isEmpty &&
+                        _cantmatController.text.isNotEmpty) {
+                      return 'Este campo es obligatorio';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(
+                  height: 20,
+                ),
+                const Text('Fotos',
+                    style: TextStyle(
+                      fontSize: 20,
+                    )),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 100,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: fotos.length,
+                    itemBuilder: (context, index) {
+                      String url = fotos[index];
+                      return Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: InkWell(
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                content: Image.file(
+                                  File(url.trim()),
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Image.asset(
+                                      'assets/no_image.png',
+                                      width: 70,
+                                      height: 70,
                                     );
                                   },
-                                  child: Image.file(
-                                    File(url.trim()),
-                                    errorBuilder: (context, error, stackTrace) {
-                                      // Manejar el error y mostrar una imagen de respaldo
-                                      return Image.asset(
-                                        'assets/no_image.png',
-                                        width: 70,
-                                        height: 70,
-                                      );
-                                    },
-                                    width: 70,
-                                    height: 70,
-                                    fit: BoxFit.cover,
-                                  ),
+                                  width: 500,
+                                  height: 500,
+                                  fit: BoxFit.cover,
                                 ),
-                                // Botón de eliminar
-                                /*  Positioned(
-                                  top: 0,
-                                  right: 0,
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      /* setState(() {
-                  images.removeAt(index); // Remueve la imagen de la lista
-                }); */
-                                      _removeImage(index);
-                                    },
-                                    child: const Icon(Icons
-                                        .cancel_rounded), // Ícono para cancelar
-                                  ),
-                                ), */
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 30,
-                  ),
-                  const SizedBox(height: 25),
-                  TextFormField(
-                    //enabled: activarCampos,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    controller: _textEditingControllerObra,
-                    onChanged: (String value) async {
-                      resultadosO = await DatabaseProvider.showObra();
-                      idObra = 0;
-                      setState(() {
-                        showListObra = value.isNotEmpty;
-                        filteredOptionsObra = resultadosO
-                            .where((opcion) => opcion.nombre
-                                .toLowerCase()
-                                .contains(value.toLowerCase()))
-                            .map((opcion) {
-                          // Guarda el ID en la variable externa
-                          if (showListObra) {
-                            idObra = opcion.id!;
-                          }
-                          // Retorna el texto para mostrar en la lista
-                          String textoObra = opcion.nombre;
-                          return '$textoObra|id:$idObra';
-                        }).toList();
-                      });
-                    },
-
-                    //readOnly: true, no editar el texto
-                    decoration: InputDecoration(
-                      labelText: 'Escribe o selecciona un dato',
-                      suffixIcon: _textEditingControllerObra.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                setState(() {
-                                  _textEditingControllerObra.clear();
-                                  isObraSelected = false;
-                                  showListObra = true;
-                                });
-                              },
-                            )
-                          : null,
-                    ),
-                    readOnly: isObraSelected,
-                    validator: (value) {
-                      if (_textEditingControllerObra.text.isEmpty &&
-                          _textEditingControllerObra.text.isNotEmpty) {
-                        return 'Este campo es obligatorio';
-                      }
-                      return null;
-                    },
-                  ),
-                  if (showListObra)
-                    Visibility(
-                      visible: showListObra && filteredOptionsObra.isNotEmpty,
-                      child: SizedBox(
-                        height: 200,
-                        child: ListView.builder(
-                          itemCount: filteredOptionsObra.length,
-                          itemBuilder: (context, index) {
-                            // Divide el texto del problema y el ID del problema
-                            List<String> partes =
-                                filteredOptionsObra[index].split('|id:');
-                            String textoObra = partes[0];
-                            int idObra = int.parse(partes[1]);
-                            return ListTile(
-                              title: Text(textoObra),
-                              onTap: () {
-                                // Puedes acceder al ID del problema seleccionado aquí
-                                int idObraSeleccionado = idObra;
-                                handleSelectionObra(
-                                    textoObra, idObraSeleccionado);
-                                showListObra = false;
-                              },
+                              ),
                             );
                           },
+                          child: Image.file(
+                            File(url.trim()),
+                            errorBuilder: (context, error, stackTrace) {
+                              return Image.asset(
+                                'assets/no_image.png',
+                                width: 70,
+                                height: 70,
+                              );
+                            },
+                            width: 70,
+                            height: 70,
+                            fit: BoxFit.cover,
+                          ),
                         ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(
+                  height: 30,
+                ),
+                const SizedBox(height: 25),
+                TextFormField(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  controller: _textEditingControllerObra,
+                  onChanged: (String value) async {
+                    resultadosO = await DatabaseProvider.showObra();
+                    idObra = 0;
+                    setState(() {
+                      showListObra = value.isNotEmpty;
+                      filteredOptionsObra = resultadosO
+                          .where((opcion) => opcion.nombre
+                              .toLowerCase()
+                              .contains(value.toLowerCase()))
+                          .map((opcion) {
+                        if (showListObra) {
+                          idObra = opcion.id!;
+                        } else {
+                          idObra = 0;
+                        }
+                        String textoObra = opcion.nombre;
+                        return '$textoObra|id:$idObra';
+                      }).toList();
+                    });
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'Escribe o selecciona un dato',
+                    suffixIcon: _textEditingControllerObra.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              setState(() {
+                                _textEditingControllerObra.clear();
+                                isObraSelected = false;
+                                showListObra = true;
+                              });
+                            },
+                          )
+                        : null,
+                  ),
+                  readOnly: isObraSelected,
+                  validator: (value) {
+                    if (_textEditingControllerObra.text.isEmpty &&
+                        _textEditingControllerObra.text.isNotEmpty) {
+                      return 'Este campo es obligatorio';
+                    }
+                    return null;
+                  },
+                ),
+                if (showListObra)
+                  Visibility(
+                    visible: showListObra && filteredOptionsObra.isNotEmpty,
+                    child: SizedBox(
+                      height: 200,
+                      child: ListView.builder(
+                        itemCount: filteredOptionsObra.length,
+                        itemBuilder: (context, index) {
+                          List<String> partes =
+                              filteredOptionsObra[index].split('|id:');
+                          String textoObra = partes[0];
+                          int idObra = int.parse(partes[1]);
+                          return ListTile(
+                            title: Text(textoObra),
+                            onTap: () {
+                              if (_textEditingControllerObra.text.isEmpty) {
+                                idObra = 0;
+                              }
+                              int idObraSeleccionado = idObra;
+                              handleSelectionObra(
+                                  textoObra, idObraSeleccionado);
+
+                              showListObra = false;
+                            },
+                          );
+                        },
                       ),
                     ),
-                  TextFormField(
-                    focusNode: _focusOtO,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    controller: _otroObraController,
-                    decoration: const InputDecoration(
-                        labelText: 'Especifique otro (Mano de Obra)'),
-                    validator: (value) {
-                      if (_otroObraController.text.isEmpty &&
-                          _otroObraController.text.isNotEmpty) {
-                        return 'Este campo es obligatorio';
-                      }
-                      return null;
-                    },
                   ),
-                  TextFormField(
-                    focusNode: _cantidadFocus,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    controller: _cantobraController,
-                    decoration: const InputDecoration(
-                        labelText: 'Cantidad de Material para Mano de Obra'),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
-                    validator: (value) {
-                      if (_cantobraController.text.isEmpty &&
-                          _cantobraController.text.isNotEmpty) {
-                        return 'Este campo es obligatorio';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment
-                        .center, // Centra los elementos horizontalmente
-                    children: [
-                      Flexible(
-                        flex: 1,
-                        child: ElevatedButton.icon(
-                          onPressed: () => {},
-                          icon: const Icon(Icons.camera),
-                          label: const Text('Tomar fotografía'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 25),
-                  ElevatedButton(
-                    onPressed: () {
-                      guardarDatosConConfirmacion(context);
-                    },
-                    key: null,
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      backgroundColor: const Color.fromRGBO(
-                        6,
-                        6,
-                        68,
-                        1,
-                      ),
+                TextFormField(
+                  focusNode: _focusOtO,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  controller: _otroObraController,
+                  decoration: const InputDecoration(
+                      labelText: 'Especifique otro (Mano de Obra)'),
+                  validator: (value) {
+                    if (_otroObraController.text.isEmpty &&
+                        _otroObraController.text.isNotEmpty) {
+                      return 'Este campo es obligatorio';
+                    }
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  keyboardType: TextInputType.number,
+                  focusNode: _cantidadFocus,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  controller: _cantobraController,
+                  decoration: const InputDecoration(
+                      labelText: 'Cantidad de Material para Mano de Obra'),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                  validator: (value) {
+                    if (_cantobraController.text.isEmpty &&
+                        _cantobraController.text.isNotEmpty) {
+                      return 'Este campo es obligatorio';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(
+                  height: 20,
+                ),
+                const SizedBox(height: 25),
+                ElevatedButton(
+                  onPressed: () {
+                    guardarDatosConConfirmacion(context);
+                  },
+                  key: null,
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor: const Color.fromRGBO(
+                      6,
+                      6,
+                      68,
+                      1,
                     ),
-                    child: const Text('Finalizar'),
                   ),
-                ],
-              ),
+                  child: const Text('Finalizar'),
+                ),
+              ],
             ),
           ),
         ),
-      );
-    } else {
-      // Si no hay conexión a Internet, mostrar el widget de No Internet
-      return const Scaffold(
-        body: Center(
-          child: NoInternet(), // Usar el widget NoInternetWidget
-        ),
-      );
-    }
+      ),
+    );
   }
 
+  // ignore: unused_element
   void _mostrarFotoEnGrande(XFile image) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return Dialog(
           backgroundColor: Colors.transparent,
-          // Establecer el color de fondo transparente
           child: Stack(
             children: [
               PhotoView(
                 imageProvider: FileImage(File(image.path)),
                 backgroundDecoration: const BoxDecoration(
-                  color: Colors
-                      .transparent, // Establece el color de fondo transparente
+                  color: Colors.transparent,
                 ),
                 loadingBuilder: (context, event) {
                   if (event == null || event.expectedTotalBytes == null) {
@@ -1031,7 +842,7 @@ class _EditMyFormState extends State<EditMyForm> {
                 right: 0,
                 child: GestureDetector(
                   onTap: () {
-                    Navigator.of(context).pop(); // Cerrar el diálogo
+                    Navigator.of(context).pop();
                   },
                   child: Container(
                     padding: const EdgeInsets.all(8),
@@ -1048,46 +859,6 @@ class _EditMyFormState extends State<EditMyForm> {
           ),
         );
       },
-    );
-  }
-
-  //permitir al usuario ver la imagen en grande
-  Widget _buildThumbnailWithCancel(XFile image, int index) {
-    return GestureDetector(
-      onTap: () {
-        _mostrarFotoEnGrande(image);
-      },
-      child: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(.0),
-            child: ClipRect(
-              child: Align(
-                alignment: Alignment.topLeft,
-                widthFactor: 1.0,
-                heightFactor: 1.0,
-                child: Image.file(
-                  File(image.path),
-                  width: 100,
-                  height: 70,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 0,
-            right: 0,
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  images.removeAt(index); // Remueve la imagen de la lista
-                });
-              },
-              child: const Icon(Icons.cancel_rounded), // Ícono para cancelar
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

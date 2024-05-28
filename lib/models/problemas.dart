@@ -448,7 +448,7 @@ void insertInitialDataP() async {
           nombre: 'Rejila pintada en exterior',
           codigo: 'RP',
           formato: 'F2'),
-      Problemas(id: null, nombre: '', codigo: '', formato: ''),
+      Problemas(id: null, nombre: '', codigo: '', formato: ''), //id:89
     ];
 
     // Verificar si ya existen datos en la tabla problemas

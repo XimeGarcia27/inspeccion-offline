@@ -31,8 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(
-                  height: 400), // Espacio para mover el contenido hacia abajo
+              const SizedBox(height: 400),
               CardContainer(
                 child: Column(
                   children: [
@@ -48,8 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       create: (_) => LoginFormProvider(),
                       child: _LoginForm(),
                     ),
-                    const SizedBox(
-                        height: 30), // Espacio entre el formulario y el botón
+                    const SizedBox(height: 30),
                   ],
                 ),
               ),
@@ -77,13 +75,10 @@ class _LoginFormState extends State<_LoginForm> {
       key: loginForm.formkey,
       child: Column(
         children: [
-          const SizedBox(height: 30), // Separar renglones
-
+          const SizedBox(height: 30),
           Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 20), // Agregar espacio a los lados
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: TextFormField(
-              // Configuraciones del cuadro de texto
               autocorrect: false,
               keyboardType: TextInputType.name,
               onChanged: (value) => loginForm.usuario = value,
@@ -94,12 +89,10 @@ class _LoginFormState extends State<_LoginForm> {
                 }
                 return null;
               },
-              // Decoración del cuadro de texto
               decoration: InputDecoration(
                 hintText: 'Nombre de Usuario',
                 labelText: 'Usuario',
                 prefixIcon: const Icon(Icons.alternate_email_rounded),
-                // Cambiar el color del borde del cuadro de texto
                 enabledBorder: OutlineInputBorder(
                   borderSide: const BorderSide(
                     color: Color.fromRGBO(169, 27, 96, 1),
@@ -115,12 +108,9 @@ class _LoginFormState extends State<_LoginForm> {
               ),
             ),
           ),
-
-          const SizedBox(height: 40), // Separar renglones
-
+          const SizedBox(height: 40),
           Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 20), // Agregar espacio a los lados
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: TextFormField(
               obscureText: _obscurePassword,
               onChanged: (value) => loginForm.password = value,
@@ -159,9 +149,7 @@ class _LoginFormState extends State<_LoginForm> {
               ),
             ),
           ),
-
           const SizedBox(height: 30),
-
           MaterialButton(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
@@ -185,17 +173,16 @@ class _LoginFormState extends State<_LoginForm> {
                     if (errorMessage == null) {
                       // ignore: use_build_context_synchronously
                       Navigator.pushReplacementNamed(
-                          context, 'inicioInsp'); // Navegar a otra pantalla
+                          // ignore: use_build_context_synchronously
+                          context,
+                          'inicioInsp');
                     } else {
-                      // Muestra un snackbar para notificar al usuario que las credenciales no son correctas
                       const snackBar = SnackBar(
                         content: Text('La contraseña o correo no coinciden'),
                         backgroundColor: Color.fromARGB(255, 1, 25, 66),
                       );
                       // ignore: use_build_context_synchronously
                       ScaffoldMessenger.of(context).showSnackBar(snackBar);
-
-                      // Restaura el estado de isLoading a falso para que el botón de inicio de sesión vuelva a estar habilitado
                       loginForm.isLoading = false;
                     }
                   },

@@ -71,7 +71,7 @@ class Reporte {
 
   factory Reporte.fromMap(Map<String, dynamic> map) {
     return Reporte(
-      idReporte: map['id_rep'] ?? "",
+      idReporte: map['id_rep'],
       formato: map['formato'] ?? "",
       nomDep: map['nom_dep'] ?? "",
       claveUbi: map['clave_ubi'] ?? "",

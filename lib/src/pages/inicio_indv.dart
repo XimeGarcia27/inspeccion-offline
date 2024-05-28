@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:app_inspections/models/reporte_model.dart';
 import 'package:app_inspections/services/db_offline.dart';
 import 'package:app_inspections/src/pages/editar_form.dart';
-import 'package:app_inspections/src/pages/reporteGeneral.dart';
+import 'package:app_inspections/src/pages/reporteMateriales.dart';
+import 'package:app_inspections/src/pages/reporteObra.dart';
 import 'package:app_inspections/src/pages/reporte_F1.dart';
 import 'package:app_inspections/src/pages/reporte_F2.dart';
 import 'package:flutter/material.dart';
@@ -112,8 +113,8 @@ class _InicioState extends State<Inicio> {
                     },
                     decoration: InputDecoration(
                       labelText: 'Buscar ubicación',
-                      hintStyle: TextStyle(color: Colors.white54),
-                      prefixIcon: Icon(Icons.search),
+                      hintStyle: const TextStyle(color: Colors.white54),
+                      prefixIcon: const Icon(Icons.search),
                       border: InputBorder.none,
                       hintText: 'Search...',
                       focusedBorder: OutlineInputBorder(
@@ -166,8 +167,6 @@ class _InicioState extends State<Inicio> {
                           return const Text('Comprueba tu conexión a internet');
                         } else {
                           List<Reporte> reportes = snapshot.data!;
-
-                          // Llamar a _filtrarReportes y esperar el resultado
                           return FutureBuilder<List<Reporte>>(
                             future: _filtrarReportes(reportes, _searchText),
                             builder: (context, filteredSnapshot) {
@@ -180,13 +179,12 @@ class _InicioState extends State<Inicio> {
                               } else {
                                 List<Reporte> filteredReportes =
                                     filteredSnapshot.data!;
-
-                                // Construir el DataTable con los reportes filtrados
                                 return SizedBox(
-                                  width: 650.0,
+                                  width: 1000.0,
                                   child: DataTable(
                                     horizontalMargin: 0,
                                     columnSpacing: 10,
+                                    headingRowHeight: 50,
                                     // ignore: deprecated_member_use
                                     dataRowHeight: 90,
                                     columns: const [
@@ -197,27 +195,37 @@ class _InicioState extends State<Inicio> {
                                             'Ubicación',
                                             style: TextStyle(
                                               fontWeight: FontWeight.bold,
-                                              fontSize: 18.0,
+                                              fontSize: 15.0,
                                             ),
                                           ),
                                         ),
                                       ),
-                                      DataColumn(
+                                      /* DataColumn(
                                         label: Text(
                                           'Departamento',
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
-                                            fontSize: 18.0,
+                                            fontSize: 15.0,
                                           ),
                                         ),
-                                      ),
+                                      ), */
                                       DataColumn(
                                         label: Text(
                                           'Problema',
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
-                                            fontSize: 18.0,
+                                            fontSize: 15.0,
                                           ),
+                                        ),
+                                      ),
+                                      DataColumn(
+                                        label: Text(
+                                          'Mano de Obra',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 15.0,
+                                          ),
+                                          softWrap: true,
                                         ),
                                       ),
                                       DataColumn(
@@ -225,7 +233,7 @@ class _InicioState extends State<Inicio> {
                                           'Editar',
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
-                                            fontSize: 18.0,
+                                            fontSize: 15.0,
                                           ),
                                         ),
                                       ),
@@ -233,10 +241,19 @@ class _InicioState extends State<Inicio> {
                                     rows: filteredReportes.map((item) {
                                       return DataRow(
                                         cells: [
-                                          DataCell(Text(item.claveUbi!)),
-                                          DataCell(Text(item.nomDep!)),
+                                          DataCell(Text(item.claveUbi ??
+                                              'N/A')), // Manejo de posible valor nulo
+                                          /*  DataCell(Text(item.nomDep ??
+                                              'N/A')), */
+                                          DataCell(SizedBox(
+                                            width: 150,
+                                            child: Text(
+                                              item.nomProbl ?? 'N/A',
+                                              softWrap: true,
+                                            ),
+                                          )),
                                           DataCell(Text(
-                                            item.nomProbl!,
+                                            item.nomObr ?? 'N/A',
                                             softWrap: true,
                                           )),
                                           DataCell(
@@ -248,7 +265,7 @@ class _InicioState extends State<Inicio> {
                                                     builder: (context) =>
                                                         EditarForm(
                                                       idTienda: idTiend,
-                                                      data: item.toMap(),
+                                                      data: item,
                                                       nombreTienda: nomTienda,
                                                     ),
                                                   ),
@@ -265,7 +282,7 @@ class _InicioState extends State<Inicio> {
                                           ),
                                         ],
                                       );
-                                    }).toList(), // Convertir el Iterable a una lista
+                                    }).toList(),
                                   ),
                                 );
                               }
@@ -293,8 +310,7 @@ class _InicioState extends State<Inicio> {
               },
               style: ElevatedButton.styleFrom(
                 foregroundColor: Colors.white,
-                backgroundColor: const Color.fromRGBO(
-                    6, 6, 68, 1), // Cambia el color del texto del botón
+                backgroundColor: const Color.fromRGBO(6, 6, 68, 1),
               ),
               child: const Text('Ver Reporte F1'),
             ),
@@ -312,8 +328,7 @@ class _InicioState extends State<Inicio> {
               },
               style: ElevatedButton.styleFrom(
                 foregroundColor: Colors.white,
-                backgroundColor: const Color.fromRGBO(
-                    6, 6, 68, 1), // Cambia el color del texto del botón
+                backgroundColor: const Color.fromRGBO(6, 6, 68, 1),
               ),
               child: const Text('Ver Reporte F2'),
             ),
@@ -322,7 +337,7 @@ class _InicioState extends State<Inicio> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ReporteScreen(
+                    builder: (context) => ReporteMaterialesF1(
                       idTienda: idTiend,
                       nomTienda: nomTienda,
                     ),
@@ -331,10 +346,27 @@ class _InicioState extends State<Inicio> {
               },
               style: ElevatedButton.styleFrom(
                 foregroundColor: Colors.white,
-                backgroundColor: const Color.fromRGBO(
-                    6, 6, 68, 1), // Cambia el color del texto del botón
+                backgroundColor: const Color.fromRGBO(6, 6, 68, 1),
               ),
-              child: const Text('Fixture y Mano de Obra'),
+              child: const Text('Materiales'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ReporteObra(
+                      idTienda: idTiend,
+                      nomTienda: nomTienda,
+                    ),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: const Color.fromRGBO(6, 6, 68, 1),
+              ),
+              child: const Text('Mano de Obra'),
             ),
           ],
         ),
