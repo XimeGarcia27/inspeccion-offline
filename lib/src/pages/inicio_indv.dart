@@ -56,9 +56,6 @@ class _InicioState extends State<Inicio> {
   String _searchText = '';
 
   @override
-  void initState() {}
-
-  @override
   void dispose() {
     super.dispose();
   }

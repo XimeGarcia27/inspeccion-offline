@@ -248,12 +248,12 @@ void insertInitialDataP() async {
           id: null, nombre: 'Pallet stope suelto', codigo: 'P4', formato: 'F1'),
       Problemas(
           id: null,
-          nombre: 'Wire deck dañado',
+          nombre: 'Wire deck dañado R',
           codigo: 'D18(R)',
           formato: 'F1'),
       Problemas(
           id: null,
-          nombre: 'Wire deck dañado',
+          nombre: 'Wire deck dañado G',
           codigo: 'D18(G)',
           formato: 'F1'),
       Problemas(
@@ -339,8 +339,8 @@ void insertInitialDataP() async {
           formato: 'F1'),
       Problemas(
           id: null,
-          nombre: '	Viga safada',
-          codigo: '	Viga safada',
+          nombre: 'Viga safada',
+          codigo: 'Viga safada',
           formato: 'F1'),
       Problemas(
           id: null,
