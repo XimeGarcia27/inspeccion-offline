@@ -51,6 +51,26 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
               ),
+              // Botón "Crear una nueva cuenta"
+              /* TextButton(
+                onPressed: () {
+                  Navigator.pushReplacementNamed(context, 'registro');
+                },
+                style: ButtonStyle(
+                  overlayColor: MaterialStateProperty.all(
+                    const Color.fromARGB(255, 169, 181, 63).withOpacity(0.1),
+                  ),
+                  shape: MaterialStateProperty.all(const StadiumBorder()),
+                ),
+                child: Text(
+                  'Crear una nueva cuenta',
+                  style: TextStyle(
+                    fontSize: MediaQuery.of(context).size.width * 0.02,
+                    fontWeight: FontWeight.bold,
+                    color: const Color.fromRGBO(169, 27, 96, 1),
+                  ),
+                ),
+              ), */
             ],
           ),
         ),

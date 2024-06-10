@@ -43,7 +43,7 @@ void insertInitialDataM() async {
       Materiales(id: null, nombre: 'Protector columna amarillo 12”'),
       Materiales(id: null, nombre: 'Separador rack galv 8”'),
       Materiales(id: null, nombre: 'Separador rack galv 6”'),
-      Materiales(id: null, nombre: 'Separador tablo galvanizado”'),
+      Materiales(id: null, nombre: 'Separador tablón galvanizado”'),
       Materiales(id: null, nombre: 'Nivelador HD sísmico galv'),
       Materiales(id: null, nombre: 'Nivelador ARU sismico galv'),
       Materiales(id: null, nombre: 'Viga seguridad amarilla 51”'),

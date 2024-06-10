@@ -116,7 +116,8 @@ class DatabaseProvider {
             'id_obra': reporte.idObr,
             'nom_obr': reporte.nomObr,
             'otro_obr': reporte.otroObr,
-            'cant_obr': reporte.cantObr
+            'cant_obr': reporte.cantObr,
+            'foto': reporte.foto,
           },
           where: 'id_rep = ?',
           whereArgs: [reporte.idReporte],

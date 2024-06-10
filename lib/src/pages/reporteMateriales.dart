@@ -247,7 +247,7 @@ Future<File> generatePDFF1(
                         ),
                         headerStyle: pdfWidgets.TextStyle(
                           fontWeight: pdfWidgets.FontWeight.bold,
-                          color: PdfColors.black,
+                          color: PdfColors.white,
                         ),
                         headerDecoration: const pdfWidgets.BoxDecoration(
                           color: PdfColors.lightBlue900,
@@ -468,29 +468,9 @@ class _ReporteWidgetF1State extends State<ReporteF1Widget> {
     return DatabaseProvider.mostrarCantidadesF1(idTienda);
   }
 
-  void _showImageDialog(String url) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        content: Image.file(
-          File(url.trim()),
-          errorBuilder: (context, error, stackTrace) {
-            return Image.asset(
-              'assets/no_image.png',
-              width: 70,
-              height: 70,
-            );
-          },
-          fit: BoxFit.contain,
-        ),
-      ),
-    );
-  }
-
   int calculateRowsPerPage(List<Map<String, dynamic>> data) {
     // Define el número máximo de filas por página que deseas mostrar
     int maxRowsPerPage = 15;
-
     // Calcula el número de filas por página basado en la longitud de tus datos
     int calculatedRowsPerPage =
         data.length > maxRowsPerPage ? maxRowsPerPage : data.length;
@@ -604,25 +584,6 @@ class _ReporteWidgetF2State extends State<ReporteF2Widget> {
 
   Future<List<Map<String, dynamic>>> _cargarReporteF2(int idTienda) async {
     return DatabaseProvider.mostrarCantidadesF2(idTienda);
-  }
-
-  void _showImageDialog(String url) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        content: Image.file(
-          File(url.trim()),
-          errorBuilder: (context, error, stackTrace) {
-            return Image.asset(
-              'assets/no_image.png',
-              width: 70,
-              height: 70,
-            );
-          },
-          fit: BoxFit.contain,
-        ),
-      ),
-    );
   }
 
   int calculateRowsPerPage(List<Map<String, dynamic>> data) {

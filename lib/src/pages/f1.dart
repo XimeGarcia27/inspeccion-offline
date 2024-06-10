@@ -291,6 +291,46 @@ class _MyFormState extends State<MyForm> {
     }
   }
 
+  Future<String?> selectPhoto() async {
+    if (images.length >= maxPhotos) {
+      // Mostrar ventana emergente cuando se excede el límite de fotos
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Límite de fotos alcanzado'),
+            content: Text('No puedes agregar más de $maxPhotos fotos.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+    }
+
+    final XFile? photo = await _picker.pickImage(source: ImageSource.gallery);
+
+    if (photo == null) return null;
+
+    print("Tenemos una imagen ${photo.path}");
+
+    await _saveImage(photo);
+    return photo.path;
+  }
+
+  // Función para guardar la imagen
+  Future<void> _saveImage(XFile image) async {
+    setState(() {
+      images.add(image);
+      imagePaths.add(image.path);
+    });
+  }
+
   void storeImageUrl(String url) async {
     final prefs = await SharedPreferences.getInstance();
     List<String>? storedUrls = prefs.getStringList('imageUrls') ?? [];
@@ -352,6 +392,57 @@ class _MyFormState extends State<MyForm> {
 
   // Función para guardar datos con confirmación
   void guardarDatosConConfirmacion(BuildContext context) async {
+    if (datosIngresados.isEmpty) {
+      // Construir el mensaje de alerta con los campos vacíos
+      String mensaje = '¡Por favor ingresa datos!';
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Campos vacíos'),
+            content: Text(mensaje),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Cerrar el diálogo
+                },
+                child: const Text('Aceptar'),
+              ),
+            ],
+          );
+        },
+      );
+      return;
+    }
+
+    if (imagePaths.isEmpty) {
+      // Construir el mensaje de alerta con los campos vacíos
+      String mensaje = '¿Estás seguro de guardar sin tomar fotos?';
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('No hay fotos'),
+            content: Text(mensaje),
+            actions: [
+              TextButton(
+                child: const Text('Cancelar'),
+                onPressed: () {
+                  Navigator.of(context).pop(false);
+                },
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Cerrar el diálogo
+                },
+                child: const Text('Aceptar'),
+              ),
+            ],
+          );
+        },
+      );
+      return;
+    }
     bool confirmacion = await mostrarDialogoConfirmacion(context);
     if (confirmacion == true) {
       _guardarDatos();
@@ -460,9 +551,6 @@ class _MyFormState extends State<MyForm> {
   }
 
   void _preguardarDatos() {
-    setState(() {
-      isGuardarHabilitado = true;
-    });
     if (formKey.currentState!.validate()) {
       String valorDepartamento = _departamentoController.text;
       String valorUbicacion = _ubicacionController.text;
@@ -481,7 +569,7 @@ class _MyFormState extends State<MyForm> {
       // Verificar que los campos no estén vacíos
       if (valorDepartamento.isEmpty) camposVacios.add('Departamento');
       if (valorUbicacion.isEmpty) camposVacios.add('Ubicación');
-      if (nomObra.isEmpty) camposVacios.add('Mano de Obra');
+      if (nomProbl.isEmpty) camposVacios.add('Defecto');
 
       if (camposVacios.isNotEmpty) {
         // Construir el mensaje de alerta con los campos vacíos
@@ -833,13 +921,44 @@ class _MyFormState extends State<MyForm> {
                     Flexible(
                       flex: 1,
                       child: ElevatedButton.icon(
-                        onPressed: _areRemainingFieldsEnabled
-                            ? () async {
-                                await _getImage();
-                              }
-                            : null,
+                        onPressed: () async {
+                          await _getImage();
+                        },
                         icon: const Icon(Icons.camera),
                         label: const Text('Tomar fotografía'),
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          backgroundColor: const Color.fromRGBO(
+                            6,
+                            6,
+                            68,
+                            1,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(
+                      width: 30,
+                    ),
+                    Flexible(
+                      flex: 1,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          final photoPath = await selectPhoto();
+                          if (photoPath == null) return;
+                          photoPath;
+                        },
+                        icon: const Icon(Icons.photo_library_outlined),
+                        label: const Text('Seleccionar fotografía'),
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          backgroundColor: const Color.fromRGBO(
+                            6,
+                            6,
+                            68,
+                            1,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -874,7 +993,6 @@ class _MyFormState extends State<MyForm> {
                       }).toList();
                     });
                   },
-
                   //readOnly: true, no editar el texto
                   decoration: InputDecoration(
                     labelText: 'Escribe o selecciona un dato',
@@ -1075,11 +1193,9 @@ class _MyFormState extends State<MyForm> {
                   ),
                 ),
                 ElevatedButton(
-                  onPressed: isGuardarHabilitado
-                      ? () {
-                          guardarDatosConConfirmacion(context);
-                        }
-                      : null,
+                  onPressed: () {
+                    guardarDatosConConfirmacion(context);
+                  },
                   key: null,
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Colors.white,

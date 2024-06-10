@@ -9,7 +9,9 @@ import 'package:app_inspections/services/functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:gallery_saver_plus/gallery_saver.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:photo_view/photo_view.dart';
 import 'dart:convert';
 
@@ -115,6 +117,7 @@ class _EditMyFormState extends State<EditMyForm> {
   int idObra = 0;
   int idReporte = 0;
   String formato = "";
+  final ImagePicker _picker = ImagePicker();
 
   _EditMyFormState({required this.idTienda, required this.context});
 
@@ -252,6 +255,7 @@ class _EditMyFormState extends State<EditMyForm> {
       showListProblemas = false;
       isProblemSelected = true;
       idProbl = idProblemaSeleccionado;
+      formato = textoFormato;
     });
   }
 
@@ -270,6 +274,135 @@ class _EditMyFormState extends State<EditMyForm> {
     if (confirmacion == true) {
       _editarDatos();
     } else {}
+  }
+
+  Future<String?> selectPhoto() async {
+    final XFile? photo = await _picker.pickImage(source: ImageSource.gallery);
+    if (photo == null) return null;
+    await _saveImage(photo);
+    return photo.path;
+  }
+
+  Future<void> _saveImage(XFile image) async {
+    String generateUniqueFilename(
+        String dep, String ubi, String nomP, int idTiend) {
+      String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+      return 'Dep_${dep}_Ubi_${ubi}_Def_${nomP}_T_${idTiend}_$timestamp.jpg';
+    }
+
+    try {
+      final Directory directory = await getApplicationDocumentsDirectory();
+      String dep = _departamentoController.text;
+      String ubi = _ubicacionController.text;
+      String nomP = _textEditingControllerProblema.text;
+
+      String fileName = generateUniqueFilename(dep, ubi, nomP, idTiend);
+      String imagePath = '${directory.path}/$fileName';
+      final File imageFile = File(imagePath);
+      await imageFile.writeAsBytes(await image.readAsBytes());
+
+      setState(() {
+        fotos.add(imagePath);
+      });
+      print("URL DE IMAGEN $imagePath");
+
+      GallerySaver.saveImage(imagePath, albumName: 'inspecciones')
+          .then((bool? success) {
+        if (success != null && success) {
+          print('La imagen se guardó correctamente en la galería.');
+        } else {
+          print('Error al guardar la imagen en la galería.');
+        }
+      });
+    } catch (e) {
+      print("No se pudo insertar el reporte online $e");
+    }
+  }
+
+  //configuración de fotos
+  void _replaceImage(int index) async {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Tomar una nueva foto'),
+              onTap: () async {
+                Navigator.of(context).pop();
+                final XFile? newImage = await _picker.pickImage(
+                    source: ImageSource.camera,
+                    preferredCameraDevice: CameraDevice.rear);
+                if (newImage != null) {
+                  String newPath = await _saveImageAndReturnPath(newImage);
+                  setState(() {
+                    fotos[index] = newPath;
+                  });
+                  print("FOTOS EN tomar una nueva foto $fotos");
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Seleccionar de la galería'),
+              onTap: () async {
+                Navigator.of(context).pop();
+                final XFile? newImage =
+                    await _picker.pickImage(source: ImageSource.gallery);
+                if (newImage != null) {
+                  String newPath = await _saveImageAndReturnPath(newImage);
+
+                  setState(() {
+                    fotos[index] = newPath;
+                  });
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete),
+              title: const Text('Eliminar imagen'),
+              onTap: () {
+                Navigator.of(context).pop();
+                setState(() {
+                  fotos.removeAt(index);
+                });
+                print("FOTOS EN eliminar imagen $fotos");
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<String> _saveImageAndReturnPath(XFile image) async {
+    String generateUniqueFilename(
+        String dep, String ubi, String nomP, int idTiend) {
+      String timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+      return 'Dep_${dep}_Ubi_${ubi}_Def_${nomP}_T_${idTiend}_$timestamp.jpg';
+    }
+
+    final Directory directory = await getApplicationDocumentsDirectory();
+    String dep = _departamentoController.text;
+    String ubi = _ubicacionController.text;
+    String nomP = _textEditingControllerProblema.text;
+
+    String fileName = generateUniqueFilename(dep, ubi, nomP, idTiend);
+    String imagePath = '${directory.path}/$fileName';
+    final File imageFile = File(imagePath);
+    await imageFile.writeAsBytes(await image.readAsBytes());
+
+    GallerySaver.saveImage(imagePath, albumName: 'inspecciones')
+        .then((bool? success) {
+      if (success != null && success) {
+        print('La imagen se guardó correctamente en la galería.');
+      } else {
+        print('Error al guardar la imagen en la galería.');
+      }
+    });
+
+    return imagePath;
   }
 
   void _editarDatos() {
@@ -309,9 +442,11 @@ class _EditMyFormState extends State<EditMyForm> {
           nomObr: nomObra,
           otroObr: otroO,
           cantObr: cantO,
-          foto: fotos.toString(),
+          foto: jsonEncode(fotos),
           lastUpdated: DateTime.now().toIso8601String(),
         );
+        print("nombre DE EDITAAR $nomProbl");
+        print("FORMATO DE EDITAAR $formato");
 
         DatabaseProvider.editarReporte(nuevoReporte);
 
@@ -640,8 +775,8 @@ class _EditMyFormState extends State<EditMyForm> {
                                   errorBuilder: (context, error, stackTrace) {
                                     return Image.asset(
                                       'assets/no_image.png',
-                                      width: 70,
-                                      height: 70,
+                                      width: 500,
+                                      height: 500,
                                     );
                                   },
                                   width: 500,
@@ -651,23 +786,57 @@ class _EditMyFormState extends State<EditMyForm> {
                               ),
                             );
                           },
-                          child: Image.file(
-                            File(url.trim()),
-                            errorBuilder: (context, error, stackTrace) {
-                              return Image.asset(
-                                'assets/no_image.png',
+                          child: Stack(
+                            children: [
+                              Image.file(
+                                File(url.trim()),
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Image.asset(
+                                    'assets/no_image.png',
+                                    width: 70,
+                                    height: 70,
+                                  );
+                                },
                                 width: 70,
                                 height: 70,
-                              );
-                            },
-                            width: 70,
-                            height: 70,
-                            fit: BoxFit.cover,
+                                fit: BoxFit.cover,
+                              ),
+                              Positioned(
+                                right: 0,
+                                child: IconButton(
+                                  icon: const Icon(Icons.edit,
+                                      color: Colors.white),
+                                  onPressed: () => _replaceImage(index),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       );
                     },
                   ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      flex: 1,
+                      child: ElevatedButton.icon(
+                        onPressed: () => selectPhoto(),
+                        icon: const Icon(Icons.photo_library_outlined),
+                        label: const Text('Agregar foto de la galería'),
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          backgroundColor: const Color.fromRGBO(
+                            6,
+                            6,
+                            68,
+                            1,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(
                   height: 30,

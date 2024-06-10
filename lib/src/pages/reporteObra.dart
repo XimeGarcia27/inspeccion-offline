@@ -219,7 +219,7 @@ Future<File> generatePDF(
                         ),
                         headerStyle: pdfWidgets.TextStyle(
                           fontWeight: pdfWidgets.FontWeight.bold,
-                          color: PdfColors.black,
+                          color: PdfColors.white,
                         ),
                         headerDecoration: const pdfWidgets.BoxDecoration(
                           color: PdfColors.lightBlue900,
