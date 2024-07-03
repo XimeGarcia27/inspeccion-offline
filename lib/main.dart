@@ -6,6 +6,7 @@ import 'package:app_inspections/models/usuarios.dart';
 import 'package:app_inspections/services/auth_service.dart';
 import 'package:app_inspections/src/pages/f1.dart';
 import 'package:app_inspections/src/pages/inicio_indv.dart';
+import 'package:app_inspections/src/pages/prueba.dart';
 import 'package:app_inspections/src/pages/screens.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -64,6 +65,7 @@ class MyApp extends StatelessWidget {
         "f1": (_) => const F1Screen(idTienda: 1),
         "inicio": (_) =>
             const InicioScreen(idTienda: 1, initialTabIndex: 0, nomTienda: ''),
+        "prueba": (_) => const PruebaExcel(idTienda: 1, nomTienda: ''),
       },
       scaffoldMessengerKey: NotificationsServices.messengerKey,
       theme: ThemeData.light().copyWith(
